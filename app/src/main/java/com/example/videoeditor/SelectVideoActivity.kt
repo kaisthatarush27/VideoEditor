@@ -10,10 +10,9 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.net.toUri
 import com.example.videoeditor.databinding.ActivityMainBinding
 
-class MainActivity : AppCompatActivity() {
+class SelectVideoActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private var input_video_uri: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {

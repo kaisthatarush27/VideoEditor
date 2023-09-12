@@ -8,4 +8,6 @@
     <string name="insert_pic">Insert Picture</string>
     <string name="insert_emoji">Insert Emoji</string>
     <string name="insert_gif">Insert Gif</string>
+    <string name="apply">Apply</string>
+    <string name="enter_text">Enter Text</string>
 </resources>

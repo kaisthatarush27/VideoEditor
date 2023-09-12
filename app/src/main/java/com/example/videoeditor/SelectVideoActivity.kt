@@ -1,13 +1,13 @@
 package com.example.videoeditor
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.videoeditor.databinding.ActivityMainBinding
@@ -92,6 +92,14 @@ class SelectVideoActivity : BaseActivity() {
                     "video loaded successfully: $input_video_uri",
                     Toast.LENGTH_SHORT
                 ).show()
+
+                val sendVideoIntentToEditVideoOperationsActivity =
+                    Intent(this, EditOperationsPlayerActivity::class.java)
+                sendVideoIntentToEditVideoOperationsActivity.putExtra(
+                    "inputVideoUri",
+                    input_video_uri
+                )
+                startActivity(sendVideoIntentToEditVideoOperationsActivity)
             }
         }
 

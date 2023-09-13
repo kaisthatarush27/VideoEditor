@@ -16,6 +16,9 @@
         android:theme="@style/Theme.VideoEditor"
         tools:targetApi="31">
         <activity
+            android:name=".EditTextPopupActivity"
+            android:exported="false" />
+        <activity
             android:name=".EditOperationsPlayerActivity"
             android:exported="true" />
         <activity

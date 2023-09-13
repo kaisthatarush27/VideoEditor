@@ -1,24 +1,35 @@
 package com.example.videoeditor
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.ImageDecoder
 import android.graphics.Matrix
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.MediaStore
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.RelativeLayout
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import com.example.videoeditor.databinding.ActivityEditOperationsPlayerBinding
 import com.example.videoeditor.stickerView.StickerView
 import com.example.videoeditor.stickerView.StickerView.OperationListener
+import kotlin.math.roundToInt
 
 
 class EditOperationsPlayerActivity : BaseActivity() {
@@ -27,6 +38,8 @@ class EditOperationsPlayerActivity : BaseActivity() {
     private var mViews: ArrayList<View>? = null
     private var mCurrentView: StickerView? = null
     private var mediaItem: MediaItem? = null
+    private var imageUri: Uri? = null
+    private var fetchVideoString: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityEditOperationsPlayerBinding.inflate(layoutInflater)
@@ -35,11 +48,11 @@ class EditOperationsPlayerActivity : BaseActivity() {
         exoPlayer = ExoPlayer.Builder(this).build()
         binding.playerView.player = exoPlayer
 
-        val fetchVideoString = intent.getStringExtra("inputVideoUri")
+        fetchVideoString = intent.getStringExtra("inputVideoUri")
         if (fetchVideoString != null) {
             Log.d("fetchVideoUri", "onCreate:$fetchVideoString")
 
-            mediaItem = MediaItem.fromUri(fetchVideoString.toUri())
+            mediaItem = MediaItem.fromUri(fetchVideoString!!.toUri())
             exoPlayer.setMediaItem(mediaItem!!)
             exoPlayer.prepare()
         }
@@ -62,6 +75,135 @@ class EditOperationsPlayerActivity : BaseActivity() {
 
         }
 
+        binding.insertImageLl.setOnClickListener {
+            if (ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.READ_EXTERNAL_STORAGE
+                ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                insertImage()
+            } else {
+                ActivityCompat.requestPermissions(
+                    this, arrayOf(
+                        Manifest.permission.READ_EXTERNAL_STORAGE,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    ), 1
+                )
+            }
+        }
+
+    }
+
+    private fun insertImage() {
+        val intent = Intent(Intent.ACTION_PICK)
+        intent.type = "image/*"
+        imageLauncher.launch(intent)
+    }
+
+    private var imageLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+
+            if (result.resultCode != RESULT_OK) {
+                return@registerForActivityResult
+            }
+            if (result.resultCode == RESULT_OK) {
+                imageUri = result.data!!.data
+                Log.d("imageUri", "imageUri: $imageUri")
+                val bitmap: Bitmap = if (Build.VERSION.SDK_INT >= 29) {
+                    // To handle deprecation use
+                    ImageDecoder.decodeBitmap(
+                        ImageDecoder.createSource(
+                            contentResolver,
+                            imageUri!!
+                        )
+                    )
+                } else {
+                    // Use older version
+                    MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
+                }
+
+                Toast.makeText(this, "bitmap: $bitmap", Toast.LENGTH_LONG).show()
+
+
+                val conf = Bitmap.Config.ARGB_4444
+
+                var ww = bitmap.width
+                if (ww < 550) {
+                    ww = 550
+                }
+                var s = ww - bitmap.width
+                if (s > 2) {
+                    s /= 2
+                }
+                val dstBmp = Bitmap.createBitmap(ww, bitmap.height + 30, conf)
+                val scaledBitmap = scaleDownImage(dstBmp,400f)
+                val bmOverlay = Bitmap.createBitmap(scaledBitmap.width, scaledBitmap.height, scaledBitmap.config)
+                val canvas = Canvas(bmOverlay)
+                canvas.drawBitmap(dstBmp, Matrix(), null)
+                canvas.drawBitmap(bitmap, s.toFloat(), 15f, null)
+
+                addStickerView(bmOverlay)
+            }
+        }
+
+    private fun scaleDownImage(
+        realImage: Bitmap, maxImageHeight: Float
+    ): Bitmap {
+        return if (realImage.height <= maxImageHeight) {
+            realImage
+        } else {
+
+            val ratio =
+                (maxImageHeight / realImage.width).coerceAtMost(maxImageHeight / realImage.height)
+            val width = (ratio * realImage.width).roundToInt()
+            val height = (ratio * realImage.height).roundToInt()
+
+            Bitmap.createScaledBitmap(
+                realImage, width,
+                height, true
+            )
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            1 -> {
+                if (grantResults.isNotEmpty()) {
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
+                        var isPermissionsGranted = false
+                        if (grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+                            isPermissionsGranted = true
+                        }
+
+                        if (isPermissionsGranted) {
+
+                            insertImage()
+                            Toast.makeText(this, "Permission Granted", Toast.LENGTH_LONG).show()
+                        } else {
+                            Toast.makeText(this, "Permission denied", Toast.LENGTH_LONG).show()
+                        }
+                    } else {
+
+                        if (fetchVideoString != null) {
+                            insertImage()
+                        } else {
+                            Toast.makeText(
+                                this@EditOperationsPlayerActivity,
+                                "Please upload video",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            return
+                        }
+                    }
+                } else {
+                    Toast.makeText(this, "Permission denied", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -123,8 +265,7 @@ class EditOperationsPlayerActivity : BaseActivity() {
         })
 
         val lp = RelativeLayout.LayoutParams(
-            RelativeLayout.LayoutParams.MATCH_PARENT,
-            RelativeLayout.LayoutParams.MATCH_PARENT
+            RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT
         )
         binding.captureLayout.addView(stickerView, lp)
         mViews!!.add(stickerView)

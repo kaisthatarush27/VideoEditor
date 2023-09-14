@@ -26,6 +26,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import com.example.EmojiActivity
 import com.example.videoeditor.databinding.ActivityEditOperationsPlayerBinding
 import com.example.videoeditor.stickerView.StickerView
 import com.example.videoeditor.stickerView.StickerView.OperationListener
@@ -73,6 +74,10 @@ class EditOperationsPlayerActivity : BaseActivity() {
 
         binding.saveButton.setOnClickListener {
 
+        }
+
+        binding.insertEmojiLl.setOnClickListener {
+            startActivity(Intent(this, EmojiActivity::class.java))
         }
 
         binding.insertImageLl.setOnClickListener {
@@ -137,8 +142,12 @@ class EditOperationsPlayerActivity : BaseActivity() {
                     s /= 2
                 }
                 val dstBmp = Bitmap.createBitmap(ww, bitmap.height + 30, conf)
-                val scaledBitmap = scaleDownImage(dstBmp,400f)
-                val bmOverlay = Bitmap.createBitmap(scaledBitmap.width, scaledBitmap.height, scaledBitmap.config)
+                val scaledBitmap = scaleDownImage(dstBmp, 400f)
+                val bmOverlay = Bitmap.createBitmap(
+                    scaledBitmap.width,
+                    scaledBitmap.height,
+                    scaledBitmap.config
+                )
                 val canvas = Canvas(bmOverlay)
                 canvas.drawBitmap(dstBmp, Matrix(), null)
                 canvas.drawBitmap(bitmap, s.toFloat(), 15f, null)

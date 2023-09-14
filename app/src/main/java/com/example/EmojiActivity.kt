@@ -33,14 +33,6 @@ class EmojiActivity : AppCompatActivity() {
 
         binding.etEmoji.findFocus()
         binding.etEmoji.isDrawingCacheEnabled = true
-//        binding.etEmoji.addTextChangedListener(object : TextWatcher {
-//            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-//                binding.textViewOutline.text = s
-//            }
-//
-//            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-//            override fun afterTextChanged(s: Editable) {}
-//        })
 
         binding.cancel.setOnClickListener {
             finish()

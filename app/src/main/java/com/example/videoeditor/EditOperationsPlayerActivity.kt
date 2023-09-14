@@ -77,7 +77,7 @@ class EditOperationsPlayerActivity : BaseActivity() {
         }
 
         binding.insertEmojiLl.setOnClickListener {
-            startActivity(Intent(this, EmojiActivity::class.java))
+            startActivityForResult(Intent(this, EmojiActivity::class.java), 2)
         }
 
         binding.insertImageLl.setOnClickListener {
@@ -220,6 +220,32 @@ class EditOperationsPlayerActivity : BaseActivity() {
         if (requestCode == 1) {
             if (resultCode == RESULT_OK) {
                 var aab = Bitmap.createBitmap(EditTextPopupActivity.textBitmap!!)
+                Log.d("eopa", "onActivityResult:$aab")
+                aab = createTrimmedBitmap(aab)
+
+
+                val conf = Bitmap.Config.ARGB_4444
+
+                var ww = aab.width
+                if (ww < 550) {
+                    ww = 550
+                }
+                var s = ww - aab.width
+                if (s > 2) {
+                    s /= 2
+                }
+                val dstBmp = Bitmap.createBitmap(ww, aab.height + 30, conf)
+
+                val bmOverlay = Bitmap.createBitmap(dstBmp.width, dstBmp.height, dstBmp.config)
+                val canvas = Canvas(bmOverlay)
+                canvas.drawBitmap(dstBmp, Matrix(), null)
+                canvas.drawBitmap(aab, s.toFloat(), 15f, null)
+
+                addStickerView(bmOverlay)
+            }
+        } else if (requestCode == 2) {
+            if (resultCode == RESULT_OK) {
+                var aab = Bitmap.createBitmap(EmojiActivity.emojiTextBitmap!!)
                 Log.d("eopa", "onActivityResult:$aab")
                 aab = createTrimmedBitmap(aab)
 

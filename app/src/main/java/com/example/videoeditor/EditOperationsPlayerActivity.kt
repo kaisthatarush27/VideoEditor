@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.ImageDecoder
 import android.graphics.Matrix
 import android.net.Uri
 import android.os.Build
@@ -115,23 +114,9 @@ class EditOperationsPlayerActivity : BaseActivity() {
             if (result.resultCode == RESULT_OK) {
                 imageUri = result.data!!.data
                 Log.d("imageUri", "imageUri: $imageUri")
-                val bitmap: Bitmap = if (Build.VERSION.SDK_INT >= 29) {
-                    // To handle deprecation use
-                    ImageDecoder.decodeBitmap(
-                        ImageDecoder.createSource(
-                            contentResolver,
-                            imageUri!!
-                        )
-                    )
-                } else {
-                    // Use older version
-                    MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
-                }
+                val bitmap: Bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
 
                 Toast.makeText(this, "bitmap: $bitmap", Toast.LENGTH_LONG).show()
-
-
-                val conf = Bitmap.Config.ARGB_4444
 
                 var ww = bitmap.width
                 if (ww < 550) {
@@ -141,17 +126,16 @@ class EditOperationsPlayerActivity : BaseActivity() {
                 if (s > 2) {
                     s /= 2
                 }
-                val dstBmp = Bitmap.createBitmap(ww, bitmap.height + 30, conf)
-                val scaledBitmap = scaleDownImage(dstBmp, 400f)
+                val dstBmp = Bitmap.createBitmap(ww, bitmap.height + 30, Bitmap.Config.ARGB_8888)
                 val bmOverlay = Bitmap.createBitmap(
-                    scaledBitmap.width,
-                    scaledBitmap.height,
-                    scaledBitmap.config
+                    dstBmp.width,
+                    dstBmp.height,
+                    dstBmp.config
                 )
                 val canvas = Canvas(bmOverlay)
+                Log.d("eoa", "hwa:${canvas.isHardwareAccelerated}")
                 canvas.drawBitmap(dstBmp, Matrix(), null)
                 canvas.drawBitmap(bitmap, s.toFloat(), 15f, null)
-
                 addStickerView(bmOverlay)
             }
         }

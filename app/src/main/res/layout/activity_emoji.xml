@@ -48,7 +48,7 @@
         android:id="@+id/btnEmojis"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignTop="@id/text_view_outline"
+        android:layout_alignTop="@id/etEmoji"
         android:layout_alignBottom="@id/etEmoji"
         android:layout_alignParentEnd="true"
         android:layout_marginEnd="80dp"

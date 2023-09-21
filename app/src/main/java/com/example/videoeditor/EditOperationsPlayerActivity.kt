@@ -25,11 +25,13 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import com.bumptech.glide.Glide
 import com.example.EmojiActivity
+import com.example.videoeditor.collageView.MultiTouchListener
 import com.example.videoeditor.databinding.ActivityEditOperationsPlayerBinding
 import com.example.videoeditor.stickerView.StickerView
 import com.example.videoeditor.stickerView.StickerView.OperationListener
-import kotlin.math.roundToInt
+import java.io.FileNotFoundException
 
 
 class EditOperationsPlayerActivity : BaseActivity() {
@@ -40,6 +42,16 @@ class EditOperationsPlayerActivity : BaseActivity() {
     private var mediaItem: MediaItem? = null
     private var imageUri: Uri? = null
     private var fetchVideoString: String? = null
+    private var gifUri: Uri? = null
+    var gifFilePath: String? = null
+    var filePath: String? = null
+    private val REQUEST_CODE_GIF_PERMISSION = 2
+    private val REQUEST_CODE_IMAGE_PERMISSION = 1
+    private var selectedImageUri: Uri? = null
+    private var pathString: String? = null
+    private var isImage = false
+    private var IMAGE_OR_GIF = 1
+//    private var GIF = 2
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityEditOperationsPlayerBinding.inflate(layoutInflater)
@@ -80,6 +92,7 @@ class EditOperationsPlayerActivity : BaseActivity() {
         }
 
         binding.insertImageLl.setOnClickListener {
+            this.IMAGE_OR_GIF = 2
             if (ContextCompat.checkSelfPermission(
                     this, Manifest.permission.READ_EXTERNAL_STORAGE
                 ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
@@ -97,11 +110,41 @@ class EditOperationsPlayerActivity : BaseActivity() {
             }
         }
 
+        binding.insertGifLl.setOnClickListener {
+            this.IMAGE_OR_GIF = 3
+            if (ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.READ_EXTERNAL_STORAGE
+                ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                insertGif()
+            } else {
+                ActivityCompat.requestPermissions(
+                    this, arrayOf(
+                        Manifest.permission.READ_EXTERNAL_STORAGE,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    ), 1
+                )
+            }
+        }
+
+    }
+
+    private fun insertGif() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+        intent.type = "*/*"
+        val mimetypes = arrayOf("image/gif", "image/webp")
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, mimetypes)
+        startActivityForResult(intent, 3)
     }
 
     private fun insertImage() {
         val intent = Intent(Intent.ACTION_PICK)
-        intent.type = "image/*"
+        intent.type = "*/*"
+        val mimetypes = arrayOf("image/jpeg", "image/jpg", "image/png")
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, mimetypes)
         imageLauncher.launch(intent)
     }
 
@@ -128,9 +171,7 @@ class EditOperationsPlayerActivity : BaseActivity() {
                 }
                 val dstBmp = Bitmap.createBitmap(ww, bitmap.height + 30, Bitmap.Config.ARGB_8888)
                 val bmOverlay = Bitmap.createBitmap(
-                    dstBmp.width,
-                    dstBmp.height,
-                    dstBmp.config
+                    dstBmp.width, dstBmp.height, dstBmp.config
                 )
                 val canvas = Canvas(bmOverlay)
                 Log.d("eoa", "hwa:${canvas.isHardwareAccelerated}")
@@ -140,25 +181,6 @@ class EditOperationsPlayerActivity : BaseActivity() {
             }
         }
 
-    private fun scaleDownImage(
-        realImage: Bitmap, maxImageHeight: Float
-    ): Bitmap {
-        return if (realImage.height <= maxImageHeight) {
-            realImage
-        } else {
-
-            val ratio =
-                (maxImageHeight / realImage.width).coerceAtMost(maxImageHeight / realImage.height)
-            val width = (ratio * realImage.width).roundToInt()
-            val height = (ratio * realImage.height).roundToInt()
-
-            Bitmap.createScaledBitmap(
-                realImage, width,
-                height, true
-            )
-        }
-    }
-
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<out String>, grantResults: IntArray
     ) {
@@ -166,7 +188,7 @@ class EditOperationsPlayerActivity : BaseActivity() {
         when (requestCode) {
             1 -> {
                 if (grantResults.isNotEmpty()) {
-                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
                         var isPermissionsGranted = false
                         if (grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
                             isPermissionsGranted = true
@@ -174,7 +196,11 @@ class EditOperationsPlayerActivity : BaseActivity() {
 
                         if (isPermissionsGranted) {
 
-                            insertImage()
+                            if (this.IMAGE_OR_GIF == 2) {
+                                insertImage()
+                            } else {
+                                insertGif()
+                            }
                             Toast.makeText(this, "Permission Granted", Toast.LENGTH_LONG).show()
                         } else {
                             Toast.makeText(this, "Permission denied", Toast.LENGTH_LONG).show()
@@ -182,7 +208,11 @@ class EditOperationsPlayerActivity : BaseActivity() {
                     } else {
 
                         if (fetchVideoString != null) {
-                            insertImage()
+                            if (this.IMAGE_OR_GIF == 2) {
+                                insertImage()
+                            } else  {
+                                insertGif()
+                            }
                         } else {
                             Toast.makeText(
                                 this@EditOperationsPlayerActivity,
@@ -252,6 +282,22 @@ class EditOperationsPlayerActivity : BaseActivity() {
                 canvas.drawBitmap(aab, s.toFloat(), 15f, null)
 
                 addStickerView(bmOverlay)
+            }
+        } else if (requestCode == 3) {
+            if (resultCode == RESULT_OK) {
+                gifUri = data!!.data  // gets the uri to that file which contains the data
+                Log.d("gifuri", "gifUri: $gifUri")
+                try {
+                    contentResolver.openInputStream(gifUri!!).use {
+                        val gifData = it!!.readBytes()
+                        Glide.with(this).load(gifData).into(binding.collageView)
+                        binding.collageView.setOnTouchListener(MultiTouchListener())
+                        it.close()
+                    }
+
+                } catch (e: FileNotFoundException) {
+                    e.printStackTrace()
+                }
             }
         }
     }

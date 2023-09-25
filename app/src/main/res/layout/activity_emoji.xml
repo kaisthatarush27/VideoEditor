@@ -33,15 +33,14 @@
         android:layout_alignParentStart="true"
         android:layout_centerInParent="true"
         android:background="@null"
-        android:gravity="center"
-        android:textCursorDrawable="@drawable/cursor"
         android:cursorVisible="true"
+        android:gravity="center"
         android:hint="@string/enter_emojis"
         android:imeOptions="actionDone"
         android:maxLines="3"
-        android:textSize="30sp"
         android:padding="10dp"
         android:textColorHint="@color/white"
+        android:textSize="30sp"
         android:visibility="visible" />
 
     <TextView

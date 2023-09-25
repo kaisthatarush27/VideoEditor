@@ -5,11 +5,10 @@ import android.graphics.Bitmap
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import androidx.appcompat.app.AppCompatActivity
 import com.example.videoeditor.databinding.EditTextPopupBinding
 
 
-class EditTextPopupActivity : AppCompatActivity() {
+class EditTextPopupActivity : BaseActivity() {
     private lateinit var binding: EditTextPopupBinding
 
     companion object {

@@ -7,16 +7,15 @@ import android.text.InputFilter
 import android.text.InputType
 import android.text.Spanned
 import android.util.Log
-import android.view.inputmethod.EditorInfo
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.example.videoeditor.BaseActivity
 import com.example.videoeditor.R
 import com.example.videoeditor.databinding.ActivityEmojiBinding
 import com.vanniktech.emoji.EmojiPopup
 import java.util.regex.Pattern
 
-class EmojiActivity : AppCompatActivity() {
+class EmojiActivity : BaseActivity() {
     private lateinit var binding: ActivityEmojiBinding
 
     companion object {

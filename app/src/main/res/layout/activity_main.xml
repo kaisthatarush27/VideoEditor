@@ -45,37 +45,102 @@
         <TextView
             android:id="@+id/create_new_text"
             android:layout_width="wrap_content"
+            android:textSize="20sp"
             android:layout_height="wrap_content"
             android:text="@string/create_new_text"
             android:textColor="@color/white"
             android:textStyle="bold" />
 
         <LinearLayout
-            android:id="@+id/select_video_ll"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/select_video_ll_white_bg"
-            android:orientation="vertical">
+            android:orientation="horizontal">
 
-            <ImageView
-                android:id="@+id/video_icon"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:contentDescription="@string/video_icon"
-                android:src="@drawable/video_file" />
-
-            <TextView
-                android:id="@+id/choseVideo"
+            <LinearLayout
+                android:id="@+id/select_video_ll"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginBottom="5dp"
-                android:text="@string/select_video"
-                android:textAlignment="center"
-                android:textColor="#000000"
-                android:textStyle="bold" />
+                android:layout_marginTop="10dp"
+                android:background="@drawable/select_video_ll_white_bg"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/video_icon"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:contentDescription="@string/video_icon"
+                    android:src="@drawable/video_file" />
+
+                <TextView
+                    android:id="@+id/choseVideo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="5dp"
+                    android:text="@string/select_video"
+                    android:textAlignment="center"
+                    android:textColor="#000000"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/select_image_ll"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="25dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/select_video_ll_white_bg"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/image_icon"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:contentDescription="@string/video_icon"
+                    android:src="@drawable/insert_photo"
+                    app:tint="#6C2C2C" />
+
+                <TextView
+                    android:id="@+id/choseImage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="5dp"
+                    android:text="@string/select_image"
+                    android:textAlignment="center"
+                    android:textColor="#000000"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/select_audio_ll"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="23dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/select_video_ll_white_bg"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/audio_icon"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:contentDescription="@string/video_icon"
+                    android:src="@drawable/audio" />
+
+                <TextView
+                    android:id="@+id/choseAudio"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="5dp"
+                    android:text="@string/select_audio"
+                    android:textAlignment="center"
+                    android:textColor="#000000"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
+
     </LinearLayout>
 
 

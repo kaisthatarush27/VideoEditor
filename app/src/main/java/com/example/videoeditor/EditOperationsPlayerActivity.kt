@@ -1,6 +1,7 @@
 package com.example.videoeditor
 
 import android.Manifest
+import android.app.ProgressDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -10,6 +11,7 @@ import android.graphics.Matrix
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
@@ -23,17 +25,44 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
+import androidx.media3.common.Effect
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.BitmapOverlay
+import androidx.media3.effect.OverlayEffect
+import androidx.media3.effect.OverlaySettings
+import androidx.media3.effect.TextureOverlay
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.transformer.Composition
+import androidx.media3.transformer.EditedMediaItem
+import androidx.media3.transformer.Effects
+import androidx.media3.transformer.ExportException
+import androidx.media3.transformer.ExportResult
+import androidx.media3.transformer.TransformationRequest
+import androidx.media3.transformer.Transformer
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.FFmpegKitConfig
 import com.bumptech.glide.Glide
 import com.example.EmojiActivity
 import com.example.videoeditor.collageView.MultiTouchListener
 import com.example.videoeditor.databinding.ActivityEditOperationsPlayerBinding
 import com.example.videoeditor.stickerView.StickerView
 import com.example.videoeditor.stickerView.StickerView.OperationListener
+import com.example.videoeditor.utils.Utils
+import com.google.android.material.snackbar.Snackbar
+import com.google.common.collect.ImmutableList
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.io.File
 import java.io.FileNotFoundException
+import java.io.FileOutputStream
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
 
-
+@UnstableApi
 class EditOperationsPlayerActivity : BaseActivity() {
     private lateinit var binding: ActivityEditOperationsPlayerBinding
     private lateinit var exoPlayer: ExoPlayer
@@ -41,17 +70,14 @@ class EditOperationsPlayerActivity : BaseActivity() {
     private var mCurrentView: StickerView? = null
     private var mediaItem: MediaItem? = null
     private var imageUri: Uri? = null
+    private var imagePath: String? = null
     private var fetchVideoString: String? = null
     private var gifUri: Uri? = null
-    var gifFilePath: String? = null
     var filePath: String? = null
-    private val REQUEST_CODE_GIF_PERMISSION = 2
-    private val REQUEST_CODE_IMAGE_PERMISSION = 1
-    private var selectedImageUri: Uri? = null
-    private var pathString: String? = null
-    private var isImage = false
     private var IMAGE_OR_GIF = 1
-//    private var GIF = 2
+    private var outputFilePath: String? = null
+    private var gifData: ByteArray? = null
+    private var input_video_uri_ffmpeg: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityEditOperationsPlayerBinding.inflate(layoutInflater)
@@ -70,6 +96,7 @@ class EditOperationsPlayerActivity : BaseActivity() {
         }
 
         binding.insertTextLl.setOnClickListener {
+            this.IMAGE_OR_GIF = 2
             startActivityForResult(Intent(this, EditTextPopupActivity::class.java), 1)
         }
 
@@ -85,9 +112,27 @@ class EditOperationsPlayerActivity : BaseActivity() {
 
         binding.saveButton.setOnClickListener {
 
+            when (this.IMAGE_OR_GIF) {
+                2 -> {
+                    mediaThreeTransformations()
+                }
+                3 -> {
+                    ffmpegGifTransformation()
+                }
+                else -> {
+                    val editOperationsSnackBar =
+                        Snackbar.make(
+                            binding.root,
+                            "Please select the edit operations",
+                            Snackbar.LENGTH_LONG
+                        )
+                    editOperationsSnackBar.show()
+                }
+            }
         }
 
         binding.insertEmojiLl.setOnClickListener {
+            this.IMAGE_OR_GIF = 2
             startActivityForResult(Intent(this, EmojiActivity::class.java), 2)
         }
 
@@ -131,26 +176,48 @@ class EditOperationsPlayerActivity : BaseActivity() {
 
     }
 
+    private fun ffmpegGifTransformation() {
+//        if (gifData!!.isEmpty()) {
+//            return
+//        }
+        val gifPath = saveGif(gifData!!)
+        Log.d("eopa", "gifFilePath:$gifPath")
+        val gifFileUri = Uri.fromFile(File(gifPath!!))
+        Log.d("eopa", "gifFileUri:$gifFileUri")
+        outputFilePath = getOutputFilePath()
+
+        input_video_uri_ffmpeg =
+            FFmpegKitConfig.getSafParameterForRead(this, Uri.parse(fetchVideoString!!))
+        Log.d("eopa", "input_video_uri_ffmpeg:$input_video_uri_ffmpeg")
+
+
+        Log.d("eopa", "collageview:${binding.collageView.x} ${binding.collageView.y}")
+        val command =
+            "-y -i $input_video_uri_ffmpeg -stream_loop -1 -i $gifFileUri -filter_complex [0]overlay=x=${binding.collageView.x}:y=${binding.collageView.y}:shortest=1[out] -map [out] -map 0:a? $outputFilePath"
+        executeFfmpegCommand(command, outputFilePath!!)
+    }
+
+    private fun mediaThreeTransformations() {
+        mediaItem = MediaItem.fromUri(fetchVideoString!!.toUri())
+        createTransformation(mediaItem!!)
+    }
+
     private fun insertGif() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
         intent.addCategory(Intent.CATEGORY_OPENABLE)
         intent.type = "*/*"
-        val mimetypes = arrayOf("image/gif", "image/webp")
+        val mimetypes = arrayOf("image/gif")
         intent.putExtra(Intent.EXTRA_MIME_TYPES, mimetypes)
         startActivityForResult(intent, 3)
     }
 
     private fun insertImage() {
-        val intent = Intent(Intent.ACTION_PICK)
-        intent.type = "*/*"
-        val mimetypes = arrayOf("image/jpeg", "image/jpg", "image/png")
-        intent.putExtra(Intent.EXTRA_MIME_TYPES, mimetypes)
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
         imageLauncher.launch(intent)
     }
 
     private var imageLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-
             if (result.resultCode != RESULT_OK) {
                 return@registerForActivityResult
             }
@@ -159,7 +226,7 @@ class EditOperationsPlayerActivity : BaseActivity() {
                 Log.d("imageUri", "imageUri: $imageUri")
                 val bitmap: Bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
 
-                Toast.makeText(this, "bitmap: $bitmap", Toast.LENGTH_LONG).show()
+                Log.d("eopa", "bitmap: $bitmap")
 
                 var ww = bitmap.width
                 if (ww < 550) {
@@ -210,16 +277,9 @@ class EditOperationsPlayerActivity : BaseActivity() {
                         if (fetchVideoString != null) {
                             if (this.IMAGE_OR_GIF == 2) {
                                 insertImage()
-                            } else  {
+                            } else {
                                 insertGif()
                             }
-                        } else {
-                            Toast.makeText(
-                                this@EditOperationsPlayerActivity,
-                                "Please upload video",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            return
                         }
                     }
                 } else {
@@ -233,27 +293,27 @@ class EditOperationsPlayerActivity : BaseActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 1) {
             if (resultCode == RESULT_OK) {
-                var aab = Bitmap.createBitmap(EditTextPopupActivity.textBitmap!!)
-                Log.d("eopa", "onActivityResult:$aab")
-                aab = createTrimmedBitmap(aab)
+                var textBitmap = Bitmap.createBitmap(EditTextPopupActivity.textBitmap!!)
+                Log.d("eopa", "onActivityResult:$textBitmap")
+                textBitmap = createTrimmedBitmap(textBitmap)
 
 
                 val conf = Bitmap.Config.ARGB_4444
 
-                var ww = aab.width
+                var ww = textBitmap.width
                 if (ww < 550) {
                     ww = 550
                 }
-                var s = ww - aab.width
+                var s = ww - textBitmap.width
                 if (s > 2) {
                     s /= 2
                 }
-                val dstBmp = Bitmap.createBitmap(ww, aab.height + 30, conf)
+                val dstBmp = Bitmap.createBitmap(ww, textBitmap.height + 30, conf)
 
                 val bmOverlay = Bitmap.createBitmap(dstBmp.width, dstBmp.height, dstBmp.config)
                 val canvas = Canvas(bmOverlay)
                 canvas.drawBitmap(dstBmp, Matrix(), null)
-                canvas.drawBitmap(aab, s.toFloat(), 15f, null)
+                canvas.drawBitmap(textBitmap, s.toFloat(), 15f, null)
 
                 addStickerView(bmOverlay)
             }
@@ -289,7 +349,7 @@ class EditOperationsPlayerActivity : BaseActivity() {
                 Log.d("gifuri", "gifUri: $gifUri")
                 try {
                     contentResolver.openInputStream(gifUri!!).use {
-                        val gifData = it!!.readBytes()
+                        gifData = it!!.readBytes()
                         Glide.with(this).load(gifData).into(binding.collageView)
                         binding.collageView.setOnTouchListener(MultiTouchListener())
                         it.close()
@@ -300,6 +360,191 @@ class EditOperationsPlayerActivity : BaseActivity() {
                 }
             }
         }
+    }
+
+    private fun createTransformation(mediaItem: MediaItem) {
+        val inputEditedMediaItem = EditedMediaItem.Builder(mediaItem).setEffects(
+            Effects(listOf(), createVideoEffects())
+        ).build()
+        val transformer = transformerBuilder()
+        filePath = getOutputFilePath()
+        Log.d("eopa", "filePath:$filePath")
+        transformer.start(inputEditedMediaItem, filePath!!)
+    }
+
+    private fun executeFfmpegCommand(exe: String, filePath: String) {
+
+        val progressDialog = ProgressDialog(this@EditOperationsPlayerActivity)
+        progressDialog.setCancelable(false)
+        progressDialog.setCanceledOnTouchOutside(false)
+        progressDialog.show()
+        FFmpegKit.executeAsync(exe, { session ->
+            val returnCode = session.returnCode
+            lifecycleScope.launch(Dispatchers.Main) {
+                if (returnCode.isValueSuccess) {
+                    Log.d("ffmpeg", "execFilePath: $filePath")
+                    outputFilePath = filePath
+                    Log.d("ffmpeg", "execInputVideoUri: $fetchVideoString")
+                    progressDialog.dismiss()
+
+                    val filterAppliedSnackbar =
+                        Snackbar.make(binding.root, "Filter Applied", Snackbar.LENGTH_LONG)
+                    filterAppliedSnackbar.show()
+                } else {
+                    progressDialog.dismiss()
+                    Log.d("TAG", session.allLogsAsString)
+                    val somethingWentWrongSnackbar =
+                        Snackbar.make(binding.root, "Something Went Wrong!", Snackbar.LENGTH_LONG)
+                    somethingWentWrongSnackbar.show()
+                }
+            }
+        }, { log ->
+            lifecycleScope.launch(Dispatchers.Main) {
+                progressDialog.setMessage("Applying Filter..${log.message}")
+            }
+        }) { statistics -> Log.d("STATS", statistics.toString()) }
+    }
+
+    private fun getOutputFilePath(): String? {
+
+        val currentTimeMillis = System.currentTimeMillis()
+        val today = Date(currentTimeMillis)
+        val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss")
+        val fileName: String = "media3_" + dateFormat.format(today) + ".mp4"
+
+        val documentsDirectory =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES).absoluteFile
+        Log.d("itadocdir", "getDocDirName:$documentsDirectory")
+        val mediaThreeDirectory = File(documentsDirectory, "Media3")
+        if (!mediaThreeDirectory.exists()) {
+            mediaThreeDirectory.mkdir()
+        }
+        val file = File(mediaThreeDirectory, fileName)
+
+
+        file.createNewFile()
+        println("No file found file created ${file.absolutePath}")
+
+
+        return file.absolutePath
+    }
+
+    private fun transformerBuilder(): Transformer {
+
+
+        val progressDialog = ProgressDialog(this@EditOperationsPlayerActivity)
+        progressDialog.setCancelable(false)
+        progressDialog.setMessage("Applying Filter..")
+        progressDialog.setCanceledOnTouchOutside(false)
+        progressDialog.show()
+        val request = TransformationRequest.Builder().setVideoMimeType(MimeTypes.VIDEO_H264)
+            .setAudioMimeType(MimeTypes.AUDIO_AAC).build()
+        val transformerListener: Transformer.Listener = object : Transformer.Listener {
+            override fun onCompleted(composition: Composition, result: ExportResult) {
+                Log.d("vcas", "success")
+
+                progressDialog.dismiss()
+                val filterAppliedSnackbar =
+                    Snackbar.make(binding.root, "Filter Applied", Snackbar.LENGTH_LONG)
+                filterAppliedSnackbar.show()
+            }
+
+            override fun onError(
+                composition: Composition, result: ExportResult, exception: ExportException
+            ) {
+                Log.d("vcae", "fail")
+                progressDialog.dismiss()
+                val somethingWentWrongSnackbar =
+                    Snackbar.make(binding.root, "Something Went Wrong!", Snackbar.LENGTH_LONG)
+                somethingWentWrongSnackbar.show()
+            }
+        }
+        return Transformer.Builder(this).setTransformationRequest(request)
+            .addListener(transformerListener).build()
+    }
+
+    private fun createVideoEffects(): ImmutableList<Effect> {
+        val effects = ImmutableList.Builder<Effect>()
+        val overlayEffect: OverlayEffect = createOverlayEffect()!!
+        effects.add(overlayEffect)
+        return effects.build()
+    }
+
+    private fun saveGif(gifData: ByteArray): String? {
+        val currentTimeMillis = System.currentTimeMillis()
+        val today = Date(currentTimeMillis)
+        val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss")
+        val fileName: String = "bitmap_" + dateFormat.format(today) + ".gif"
+        val gifDirectory =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).absoluteFile
+        if (!gifDirectory.exists()) {
+            gifDirectory.mkdir()
+        }
+        val file = File(gifDirectory, fileName)
+        file.createNewFile()
+        try {
+            val fos = FileOutputStream(file)
+            fos.write(gifData)
+            fos.close()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+
+
+        println("No gif file found gif file created ${file.absolutePath}")
+        return file.absolutePath
+    }
+
+    private fun saveBitmap(bitmap: Bitmap): String? {
+        val currentTimeMillis = System.currentTimeMillis()
+        val today = Date(currentTimeMillis)
+        val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss")
+        val fileName: String = "bitmap_" + dateFormat.format(today) + ".png"
+        val bitmapDirectory =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).absoluteFile
+        if (!bitmapDirectory.exists()) {
+            bitmapDirectory.mkdir()
+        }
+        val file = File(bitmapDirectory, fileName)
+        file.createNewFile()
+        println("No bitmap file found bitmap file created ${file.absolutePath}")
+
+        try {
+            val out = FileOutputStream(file)
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            out.flush()
+            out.close()
+
+            val fileWithBitmapSavedSnackbar =
+                Snackbar.make(binding.root, "file with bitmap saved", Snackbar.LENGTH_LONG)
+            fileWithBitmapSavedSnackbar.show()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        return file.absolutePath
+    }
+
+    private fun createOverlayEffect(): OverlayEffect? {
+        if (mCurrentView != null) {
+            mCurrentView!!.setInEdit(false)
+        }
+        binding.captureLayout.isDrawingCacheEnabled = true
+        binding.captureLayout.buildDrawingCache()
+        var finalBitmap: Bitmap = Bitmap.createBitmap(binding.captureLayout.drawingCache)
+        val overLaysBuilder: ImmutableList.Builder<TextureOverlay> = ImmutableList.builder()
+        val overlaySettings = OverlaySettings.Builder().build()
+        finalBitmap = Utils.createSquaredBitmap(finalBitmap)
+        Log.d("eopa", "finalBitmap:$finalBitmap")
+        val finalBitmapPath = saveBitmap(finalBitmap)
+        Log.d("eopa", "finalBitmapPath:$finalBitmapPath")
+        val finalBitmapUri = Uri.fromFile(finalBitmapPath?.let { File(it) })
+        Log.d("eopa", "finalBitmapUri:$finalBitmapUri")
+        val imageOverlay =
+            BitmapOverlay.createStaticBitmapOverlay(this, finalBitmapUri, overlaySettings)
+        overLaysBuilder.add(imageOverlay)
+        val overlays: ImmutableList<TextureOverlay> = overLaysBuilder.build()
+        return if (overlays.isEmpty()) null else OverlayEffect(overlays)
     }
 
     private fun addStickerView(bitmap: Bitmap) {
@@ -381,5 +626,33 @@ class EditOperationsPlayerActivity : BaseActivity() {
             Bitmap.createBitmap(512, 512, conf)
         }
         return bmp
+    }
+
+    override fun onResume() {
+        super.onResume()
+        exoPlayer.stop()
+        exoPlayer.release()
+        initExoPlayer()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        exoPlayer.stop()
+        exoPlayer.release()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        exoPlayer.stop()
+        exoPlayer.release()
+    }
+
+
+    private fun initExoPlayer() {
+        exoPlayer = ExoPlayer.Builder(this).build()
+        binding.playerView.player = exoPlayer
+        mediaItem = MediaItem.fromUri(fetchVideoString!!.toUri())
+        exoPlayer.setMediaItem(mediaItem!!)
+        exoPlayer.prepare()
     }
 }

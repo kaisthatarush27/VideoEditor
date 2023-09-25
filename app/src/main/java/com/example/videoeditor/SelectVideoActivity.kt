@@ -5,7 +5,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
+import android.view.animation.AlphaAnimation
+import android.view.animation.Animation
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
@@ -16,6 +19,9 @@ import com.example.videoeditor.databinding.ActivityMainBinding
 class SelectVideoActivity : BaseActivity() {
     private lateinit var binding: ActivityMainBinding
     private var input_video_uri: String? = null
+    private var fadeIn: Animation? = null
+    private var fadeOut: Animation? = null
+    private val handler: Handler = Handler()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -39,6 +45,26 @@ class SelectVideoActivity : BaseActivity() {
                 )
             }
         }
+
+        fadeIn = AlphaAnimation(0.6f, 1f)
+        (fadeIn as AlphaAnimation).duration = 1000 // 1 second
+
+
+        fadeOut = AlphaAnimation(1f, 0.6f)
+        (fadeOut as AlphaAnimation).duration = 1000 // 1 second
+
+        startAnimation()
+
+    }
+
+    private fun startAnimation() {
+        binding.welcomeTv.startAnimation(fadeIn)
+        handler.postDelayed({
+            binding.welcomeTv.startAnimation(fadeOut)
+            handler.postDelayed({
+                startAnimation()
+            }, fadeOut!!.duration)
+        }, fadeIn!!.duration)
     }
 
     override fun onRequestPermissionsResult(
@@ -87,11 +113,6 @@ class SelectVideoActivity : BaseActivity() {
             it?.let {
                 input_video_uri = it.toString()
                 Log.d("mauri", "uri:$input_video_uri")
-                Toast.makeText(
-                    this,
-                    "video loaded successfully: $input_video_uri",
-                    Toast.LENGTH_SHORT
-                ).show()
 
                 val sendVideoIntentToEditVideoOperationsActivity =
                     Intent(this, EditOperationsPlayerActivity::class.java)

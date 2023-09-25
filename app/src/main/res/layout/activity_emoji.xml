@@ -32,27 +32,27 @@
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_centerInParent="true"
-        android:layout_marginStart="30dp"
-        android:layout_marginEnd="200dp"
-        android:background="@drawable/edit_text_bg"
+        android:background="@null"
+        android:gravity="center"
+        android:textCursorDrawable="@drawable/cursor"
+        android:cursorVisible="true"
         android:hint="@string/enter_emojis"
         android:imeOptions="actionDone"
-        android:inputType="text"
         android:maxLines="3"
+        android:textSize="30sp"
         android:padding="10dp"
-        android:textColor="@android:color/white"
-        android:visibility="visible"
-        app:emojiSize="30sp" />
+        android:textColorHint="@color/white"
+        android:visibility="visible" />
 
-    <Button
+    <TextView
         android:id="@+id/btnEmojis"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignTop="@id/etEmoji"
-        android:layout_alignBottom="@id/etEmoji"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="80dp"
-        android:text="🙂" />
+        android:layout_alignTop="@id/apply"
+        android:layout_toStartOf="@id/apply"
+        android:text="🙂"
+        android:textColor="#F9F10D"
+        android:textSize="20sp" />
 
 
 </RelativeLayout>

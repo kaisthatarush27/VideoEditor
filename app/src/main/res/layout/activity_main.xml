@@ -14,7 +14,23 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:title="@string/app_name"
-        app:titleTextColor="@color/black" />
+        app:titleTextColor="#ffffff" />
+
+    <TextView
+        android:id="@+id/welcomeTv"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="50dp"
+        android:background="@drawable/welcome_text_view_bg"
+        android:gravity="center"
+        android:padding="20dp"
+        android:text="Welcome to Video Editor and enjoy editing videos."
+        android:textColor="#D1FF00"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toTopOf="@id/createNewMediaLl"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/mt_toolbar" />
 
     <LinearLayout
         android:id="@+id/createNewMediaLl"
@@ -31,6 +47,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/create_new_text"
+            android:textColor="@color/white"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -56,6 +73,7 @@
                 android:layout_marginBottom="5dp"
                 android:text="@string/select_video"
                 android:textAlignment="center"
+                android:textColor="#000000"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>

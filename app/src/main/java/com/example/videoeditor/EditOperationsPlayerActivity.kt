@@ -229,6 +229,14 @@ class EditOperationsPlayerActivity : BaseActivity() {
                 val bitmap: Bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
 
                 Log.d("eopa", "bitmap: $bitmap")
+//                val bmOverlay = Bitmap.createBitmap(
+//                    bitmap.width, bitmap.height, bitmap.config
+//                )
+//                val canvas = Canvas(bmOverlay)
+//                Log.d("eoa", "hwa:${canvas.isHardwareAccelerated}")
+//                canvas.drawBitmap(bitmap, Matrix(), null)
+//                canvas.drawBitmap(bitmap, 0f, 15f, null)
+//                addStickerView(bmOverlay)
 
                 var ww = bitmap.width
                 if (ww < 550) {
@@ -314,53 +322,29 @@ class EditOperationsPlayerActivity : BaseActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 1) {
             if (resultCode == RESULT_OK) {
-                var textBitmap = Bitmap.createBitmap(EditTextPopupActivity.textBitmap!!)
+                val textBitmap = Bitmap.createBitmap(
+                    EditTextPopupActivity.textBitmap!!
+                )
                 Log.d("eopa", "onActivityResult:$textBitmap")
-                textBitmap = createTrimmedBitmap(textBitmap)
 
-
-                val conf = Bitmap.Config.ARGB_4444
-
-                var ww = textBitmap.width
-                if (ww < 550) {
-                    ww = 550
-                }
-                var s = ww - textBitmap.width
-                if (s > 2) {
-                    s /= 2
-                }
-                val dstBmp = Bitmap.createBitmap(ww, textBitmap.height + 30, conf)
-
-                val bmOverlay = Bitmap.createBitmap(dstBmp.width, dstBmp.height, dstBmp.config)
+                val bmOverlay =
+                    Bitmap.createBitmap(textBitmap.width, textBitmap.height, textBitmap.config)
                 val canvas = Canvas(bmOverlay)
-                canvas.drawBitmap(dstBmp, Matrix(), null)
-                canvas.drawBitmap(textBitmap, s.toFloat(), 15f, null)
+                canvas.drawBitmap(textBitmap, 0f, 15f, null)
 
                 addStickerView(bmOverlay)
             }
         } else if (requestCode == 2) {
             if (resultCode == RESULT_OK) {
-                var aab = Bitmap.createBitmap(EmojiActivity.emojiTextBitmap!!)
-                Log.d("eopa", "onActivityResult:$aab")
-                aab = createTrimmedBitmap(aab)
+                val emojiTextBitmap = Bitmap.createBitmap(EmojiActivity.emojiTextBitmap!!)
 
-
-                val conf = Bitmap.Config.ARGB_4444
-
-                var ww = aab.width
-                if (ww < 550) {
-                    ww = 550
-                }
-                var s = ww - aab.width
-                if (s > 2) {
-                    s /= 2
-                }
-                val dstBmp = Bitmap.createBitmap(ww, aab.height + 30, conf)
-
-                val bmOverlay = Bitmap.createBitmap(dstBmp.width, dstBmp.height, dstBmp.config)
+                val bmOverlay = Bitmap.createBitmap(
+                    emojiTextBitmap.width,
+                    emojiTextBitmap.height,
+                    emojiTextBitmap.config
+                )
                 val canvas = Canvas(bmOverlay)
-                canvas.drawBitmap(dstBmp, Matrix(), null)
-                canvas.drawBitmap(aab, s.toFloat(), 15f, null)
+                canvas.drawBitmap(emojiTextBitmap, 0f, 15f, null)
 
                 addStickerView(bmOverlay)
             }
@@ -552,11 +536,11 @@ class EditOperationsPlayerActivity : BaseActivity() {
         }
         binding.captureLayout.isDrawingCacheEnabled = true
         binding.captureLayout.buildDrawingCache()
-        var finalBitmap: Bitmap = Bitmap.createBitmap(binding.captureLayout.drawingCache)
+        val finalBitmap: Bitmap = Bitmap.createBitmap(binding.captureLayout.drawingCache)
         val overLaysBuilder: ImmutableList.Builder<TextureOverlay> = ImmutableList.builder()
         val overlaySettings = OverlaySettings.Builder().build()
-        finalBitmap = Utils.createSquaredBitmap(finalBitmap)
-        Log.d("eopa", "finalBitmap:$finalBitmap")
+//        finalBitmap = Utils.createSquaredBitmap(finalBitmap)
+//        Log.d("eopa", "finalBitmap:$finalBitmap")
         val finalBitmapPath = saveBitmap(finalBitmap)
         Log.d("eopa", "finalBitmapPath:$finalBitmapPath")
         val finalBitmapUri = Uri.fromFile(finalBitmapPath?.let { File(it) })

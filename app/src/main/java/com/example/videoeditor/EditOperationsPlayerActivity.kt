@@ -116,9 +116,11 @@ class EditOperationsPlayerActivity : BaseActivity() {
                 2 -> {
                     mediaThreeTransformations()
                 }
+
                 3 -> {
                     ffmpegGifTransformation()
                 }
+
                 else -> {
                     val editOperationsSnackBar =
                         Snackbar.make(
@@ -268,9 +270,22 @@ class EditOperationsPlayerActivity : BaseActivity() {
                             } else {
                                 insertGif()
                             }
-                            Toast.makeText(this, "Permission Granted", Toast.LENGTH_LONG).show()
+
+                            val permissionGrantedSnackBar =
+                                Snackbar.make(
+                                    binding.root,
+                                    "Permission Granted",
+                                    Snackbar.LENGTH_LONG
+                                )
+                            permissionGrantedSnackBar.show()
                         } else {
-                            Toast.makeText(this, "Permission denied", Toast.LENGTH_LONG).show()
+                            val permissionDeniedSnackBar =
+                                Snackbar.make(
+                                    binding.root,
+                                    "Permission Denied",
+                                    Snackbar.LENGTH_LONG
+                                )
+                            permissionDeniedSnackBar.show()
                         }
                     } else {
 
@@ -283,7 +298,13 @@ class EditOperationsPlayerActivity : BaseActivity() {
                         }
                     }
                 } else {
-                    Toast.makeText(this, "Permission denied", Toast.LENGTH_LONG).show()
+                    val permissionDeniedSnackBar =
+                        Snackbar.make(
+                            binding.root,
+                            "Permission Denied",
+                            Snackbar.LENGTH_LONG
+                        )
+                    permissionDeniedSnackBar.show()
                 }
             }
         }

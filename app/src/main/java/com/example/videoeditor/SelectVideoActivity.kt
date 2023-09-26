@@ -14,6 +14,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.videoeditor.databinding.ActivityMainBinding
+import com.google.android.material.snackbar.Snackbar
 
 
 class SelectVideoActivity : BaseActivity() {
@@ -33,8 +34,6 @@ class SelectVideoActivity : BaseActivity() {
                     this, Manifest.permission.WRITE_EXTERNAL_STORAGE
                 ) == PackageManager.PERMISSION_GRANTED
             ) {
-//                insertImage()
-//                Toast.makeText(this, "Permission Check", Toast.LENGTH_SHORT).show()
                 selectVideo()
             } else {
                 ActivityCompat.requestPermissions(
@@ -47,11 +46,11 @@ class SelectVideoActivity : BaseActivity() {
         }
 
         fadeIn = AlphaAnimation(0.6f, 1f)
-        (fadeIn as AlphaAnimation).duration = 1000 // 1 second
+        (fadeIn as AlphaAnimation).duration = 1000
 
 
         fadeOut = AlphaAnimation(1f, 0.6f)
-        (fadeOut as AlphaAnimation).duration = 1000 // 1 second
+        (fadeOut as AlphaAnimation).duration = 1000
 
         startAnimation()
 
@@ -81,28 +80,34 @@ class SelectVideoActivity : BaseActivity() {
                         }
 
                         if (isPermissionsGranted) {
-
-//                            insertImage()
                             selectVideo()
-                            Toast.makeText(this, "Permission Granted", Toast.LENGTH_LONG).show()
+                            val permissionGrantedSnackBar =
+                                Snackbar.make(
+                                    binding.root,
+                                    "Permission Granted",
+                                    Snackbar.LENGTH_LONG
+                                )
+                            permissionGrantedSnackBar.show()
                         } else {
-                            Toast.makeText(this, "Permission denied", Toast.LENGTH_LONG).show()
+                            val permissionDeniedSnackBar =
+                                Snackbar.make(
+                                    binding.root,
+                                    "Permission Denied",
+                                    Snackbar.LENGTH_LONG
+                                )
+                            permissionDeniedSnackBar.show()
                         }
                     } else {
-
-//                        if (input_video_uri != null) {
-//                            insertImage()
-//                        } else {
-//                            Toast.makeText(
-//                                this@InsertPictureActivity, "Please upload video", Toast.LENGTH_LONG
-//                            ).show()
-//                            return
-//                        }
-
                         selectVideo()
                     }
                 } else {
-                    Toast.makeText(this, "Permission denied", Toast.LENGTH_LONG).show()
+                    val permissionDeniedSnackBar =
+                        Snackbar.make(
+                            binding.root,
+                            "Permission Denied",
+                            Snackbar.LENGTH_LONG
+                        )
+                    permissionDeniedSnackBar.show()
                 }
             }
         }

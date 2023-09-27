@@ -1,6 +1,7 @@
 package com.example.videoeditor
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.ProgressDialog
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -8,6 +9,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
+import android.graphics.Point
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -15,12 +17,9 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
-import android.util.DisplayMetrics
 import android.util.Log
 import android.view.View
-import android.view.ViewGroup
 import android.widget.RelativeLayout
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -50,7 +49,6 @@ import com.example.videoeditor.collageView.MultiTouchListener
 import com.example.videoeditor.databinding.ActivityEditOperationsPlayerBinding
 import com.example.videoeditor.stickerView.StickerView
 import com.example.videoeditor.stickerView.StickerView.OperationListener
-import com.example.videoeditor.utils.Utils
 import com.google.android.material.snackbar.Snackbar
 import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.Dispatchers
@@ -61,6 +59,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
+
 
 @UnstableApi
 class EditOperationsPlayerActivity : BaseActivity() {
@@ -78,11 +77,11 @@ class EditOperationsPlayerActivity : BaseActivity() {
     private var outputFilePath: String? = null
     private var gifData: ByteArray? = null
     private var input_video_uri_ffmpeg: String? = null
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityEditOperationsPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
         exoPlayer = ExoPlayer.Builder(this).build()
         binding.playerView.player = exoPlayer
 
@@ -100,15 +99,26 @@ class EditOperationsPlayerActivity : BaseActivity() {
             startActivityForResult(Intent(this, EditTextPopupActivity::class.java), 1)
         }
 
-        val mParams: ViewGroup.LayoutParams = binding.captureLayout.layoutParams
-        val metrics = DisplayMetrics()
-        windowManager.defaultDisplay.getMetrics(metrics)
-
-
-        mParams.height = metrics.widthPixels
-        binding.captureLayout.layoutParams = mParams
-
         mViews = ArrayList()
+
+//        binding.captureLayout.setOnTouchListener(@SuppressLint("ClickableViewAccessibility")
+//        object : OnTouchListener{
+//            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+//                if(event!!.action == MotionEvent.ACTION_UP){
+//                    Log.d("eopa", "onTouchx: ${event.x} onTouchy: ${event.y}")
+//                    Log.d("eopa", "collage onTouchx: ${binding.collageView.left} onTouchy: ${binding.collageView.right}")
+//                    val location = IntArray(2)
+//                    binding.collageView.getLocationOnScreen(location)
+//                    val x = location[0]
+//                    val y = location[1]
+//                    Log.d("eopa", "collage location X axis is : $x Y axis is: $y")
+//
+//
+//                }
+//                return true
+//            }
+//
+//        })
 
         binding.saveButton.setOnClickListener {
 
@@ -178,10 +188,12 @@ class EditOperationsPlayerActivity : BaseActivity() {
 
     }
 
+    fun getLocationOnScreen(view: View): Point {
+        val location = IntArray(2)
+        view.getLocationOnScreen(location)
+        return Point(location[0], location[1])
+    }
     private fun ffmpegGifTransformation() {
-//        if (gifData!!.isEmpty()) {
-//            return
-//        }
         val gifPath = saveGif(gifData!!)
         Log.d("eopa", "gifFilePath:$gifPath")
         val gifFileUri = Uri.fromFile(File(gifPath!!))
@@ -192,10 +204,13 @@ class EditOperationsPlayerActivity : BaseActivity() {
             FFmpegKitConfig.getSafParameterForRead(this, Uri.parse(fetchVideoString!!))
         Log.d("eopa", "input_video_uri_ffmpeg:$input_video_uri_ffmpeg")
 
-
-        Log.d("eopa", "collageview:${binding.collageView.x} ${binding.collageView.y}")
+        val location = IntArray(2)
+        binding.collageView.getLocationOnScreen(location)
+        val x = location[0]
+        val y = location[1]
+        Log.d("eopa", "collage after saved x value:$x y value: $y")
         val command =
-            "-y -i $input_video_uri_ffmpeg -stream_loop -1 -i $gifFileUri -filter_complex [0]overlay=x=${binding.collageView.x}:y=${binding.collageView.y}:shortest=1[out] -map [out] -map 0:a? $outputFilePath"
+            "-y -i $input_video_uri_ffmpeg -stream_loop -1 -i $gifFileUri -filter_complex [0]overlay=x=${x}:y=${y}:shortest=1[out] -map [out] -map 0:a? $outputFilePath"
         executeFfmpegCommand(command, outputFilePath!!)
     }
 
@@ -229,14 +244,6 @@ class EditOperationsPlayerActivity : BaseActivity() {
                 val bitmap: Bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
 
                 Log.d("eopa", "bitmap: $bitmap")
-//                val bmOverlay = Bitmap.createBitmap(
-//                    bitmap.width, bitmap.height, bitmap.config
-//                )
-//                val canvas = Canvas(bmOverlay)
-//                Log.d("eoa", "hwa:${canvas.isHardwareAccelerated}")
-//                canvas.drawBitmap(bitmap, Matrix(), null)
-//                canvas.drawBitmap(bitmap, 0f, 15f, null)
-//                addStickerView(bmOverlay)
 
                 var ww = bitmap.width
                 if (ww < 550) {
@@ -327,24 +334,45 @@ class EditOperationsPlayerActivity : BaseActivity() {
                 )
                 Log.d("eopa", "onActivityResult:$textBitmap")
 
-                val bmOverlay =
-                    Bitmap.createBitmap(textBitmap.width, textBitmap.height, textBitmap.config)
+                val conf = Bitmap.Config.ARGB_4444
+
+                var ww = textBitmap.width
+                if (ww < 550) {
+                    ww = 550
+                }
+                var s = ww - textBitmap.width
+                if (s > 2) {
+                    s /= 2
+                }
+                val dstBmp = Bitmap.createBitmap(ww, textBitmap.height + 30, conf)
+
+                val bmOverlay = Bitmap.createBitmap(dstBmp.width, dstBmp.height, dstBmp.config)
                 val canvas = Canvas(bmOverlay)
-                canvas.drawBitmap(textBitmap, 0f, 15f, null)
+                canvas.drawBitmap(dstBmp, Matrix(), null)
+                canvas.drawBitmap(textBitmap, s.toFloat(), 15f, null)
 
                 addStickerView(bmOverlay)
             }
         } else if (requestCode == 2) {
             if (resultCode == RESULT_OK) {
                 val emojiTextBitmap = Bitmap.createBitmap(EmojiActivity.emojiTextBitmap!!)
+                Log.d("eopa", "emojiTextBitmap:$emojiTextBitmap")
+                val conf = Bitmap.Config.ARGB_4444
 
-                val bmOverlay = Bitmap.createBitmap(
-                    emojiTextBitmap.width,
-                    emojiTextBitmap.height,
-                    emojiTextBitmap.config
-                )
+                var ww = emojiTextBitmap.width
+                if (ww < 550) {
+                    ww = 550
+                }
+                var s = ww - emojiTextBitmap.width
+                if (s > 2) {
+                    s /= 2
+                }
+                val dstBmp = Bitmap.createBitmap(ww, emojiTextBitmap.height + 30, conf)
+
+                val bmOverlay = Bitmap.createBitmap(dstBmp.width, dstBmp.height, dstBmp.config)
                 val canvas = Canvas(bmOverlay)
-                canvas.drawBitmap(emojiTextBitmap, 0f, 15f, null)
+                canvas.drawBitmap(dstBmp, Matrix(), null)
+                canvas.drawBitmap(emojiTextBitmap, s.toFloat(), 15f, null)
 
                 addStickerView(bmOverlay)
             }
@@ -356,7 +384,17 @@ class EditOperationsPlayerActivity : BaseActivity() {
                     contentResolver.openInputStream(gifUri!!).use {
                         gifData = it!!.readBytes()
                         Glide.with(this).load(gifData).into(binding.collageView)
+                        val locations = IntArray(2)
+                        binding.collageView.getLocationOnScreen(locations)
+                        val x1 = locations[0]
+                        val y1 = locations[1]
+                        Log.d("eopa", "collage before drag x value:$x1 y value: $y1")
                         binding.collageView.setOnTouchListener(MultiTouchListener())
+                        val location = IntArray(2)
+                        binding.collageView.getLocationOnScreen(location)
+                        val x = location[0]
+                        val y = location[1]
+                        Log.d("eopa", "collage after drag x value:$x y value: $y")
                         it.close()
                     }
 
@@ -536,11 +574,16 @@ class EditOperationsPlayerActivity : BaseActivity() {
         }
         binding.captureLayout.isDrawingCacheEnabled = true
         binding.captureLayout.buildDrawingCache()
-        val finalBitmap: Bitmap = Bitmap.createBitmap(binding.captureLayout.drawingCache)
+        val finalBitmap: Bitmap = Bitmap.createBitmap(
+            binding.captureLayout.drawingCache/*,
+            StickerView.lastX.toInt(),StickerView.lastY.toInt(),
+            binding.captureLayout.width,
+            binding.captureLayout.height*/
+        )
         val overLaysBuilder: ImmutableList.Builder<TextureOverlay> = ImmutableList.builder()
         val overlaySettings = OverlaySettings.Builder().build()
 //        finalBitmap = Utils.createSquaredBitmap(finalBitmap)
-//        Log.d("eopa", "finalBitmap:$finalBitmap")
+        Log.d("eopa", "finalBitmap:$finalBitmap")
         val finalBitmapPath = saveBitmap(finalBitmap)
         Log.d("eopa", "finalBitmapPath:$finalBitmapPath")
         val finalBitmapUri = Uri.fromFile(finalBitmapPath?.let { File(it) })
@@ -569,6 +612,7 @@ class EditOperationsPlayerActivity : BaseActivity() {
                 mCurrentView!!.setInEdit(true)
             }
 
+            // 757
             override fun onTop(stickerView: StickerView?) {
                 Handler(Looper.getMainLooper()).post {
                     addStickerView(

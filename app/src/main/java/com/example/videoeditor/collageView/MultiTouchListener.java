@@ -1,5 +1,6 @@
 package com.example.videoeditor.collageView;
 
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
@@ -10,8 +11,10 @@ public class MultiTouchListener implements OnTouchListener {
     private boolean isScaleEnabled = true;
     private boolean isTranslateEnabled = true;
     private int mActivePointerId = INVALID_POINTER_ID;
-    private float mPrevX;
-    private float mPrevY;
+    public static float mPrevX;
+    public static float mPrevY;
+    public static float mCurY;
+    public static float mCurX;
     private ScaleGestureDetector mScaleGestureDetector = new ScaleGestureDetector(new ScaleGestureListener());
     private float maximumScale = 10.0f;
     private float minimumScale = 0.5f;
@@ -127,9 +130,13 @@ public class MultiTouchListener implements OnTouchListener {
                     this.mPrevX = event.getX();
                     this.mPrevY = event.getY();
                     this.mActivePointerId = event.getPointerId(0);
+                    Log.d("eopa", "multi touch down mprevx" + mPrevX + " mprevy" + mPrevY);
                     break;
                 case MotionEvent.ACTION_UP:
+                    this.mCurX = event.getX();
+                    this.mCurY = event.getY();
                     this.mActivePointerId = INVALID_POINTER_ID;
+                    Log.d("eopa", "multi touch up mCurX" + mCurX + " mCurY" + mCurY);
                     view.performClick();
                     break;
                 case MotionEvent.ACTION_MOVE:
@@ -155,6 +162,7 @@ public class MultiTouchListener implements OnTouchListener {
                         this.mPrevX = event.getX(newPointerIndex);
                         this.mPrevY = event.getY(newPointerIndex);
                         this.mActivePointerId = event.getPointerId(newPointerIndex);
+                        Log.d("eopa", "multi touch pup mprevx" + mPrevX + " mprevy" + mPrevY);
                         break;
                     }
                     break;

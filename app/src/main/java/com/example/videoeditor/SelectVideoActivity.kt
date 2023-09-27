@@ -73,7 +73,7 @@ class SelectVideoActivity : BaseActivity() {
         when (requestCode) {
             1 -> {
                 if (grantResults.isNotEmpty()) {
-                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
                         var isPermissionsGranted = false
                         if (grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
                             isPermissionsGranted = true

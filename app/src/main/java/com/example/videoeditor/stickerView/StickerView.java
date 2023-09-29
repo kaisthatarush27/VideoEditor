@@ -104,8 +104,8 @@ public class StickerView extends AppCompatImageView {
         localPaint.setStyle(Paint.Style.STROKE);
         localPaint.setStrokeWidth(2.0f);
         dm = getResources().getDisplayMetrics();
-        mScreenwidth = dm.widthPixels;
-        mScreenHeight = dm.heightPixels;
+//        mScreenwidth = dm.widthPixels;
+//        mScreenHeight = dm.heightPixels;
 
     }
 
@@ -172,13 +172,13 @@ public class StickerView extends AppCompatImageView {
     public void setBitmap(Bitmap bitmap) {
         matrix.reset();
         mBitmap = bitmap;
-        setDiagonalLength();
+//        setDiagonalLength();
         initBitmaps();
         int w = mBitmap.getWidth();
         int h = mBitmap.getHeight();
         oringinWidth = w;
-        float initScale = (MIN_SCALE + MAX_SCALE) / 2;
-        matrix.postScale(initScale, initScale, w / 2, h / 2);
+//        float initScale = (MIN_SCALE + MAX_SCALE) / 2;
+//        matrix.postScale(initScale, initScale, w / 2, h / 2);
         matrix.postTranslate(mScreenwidth / 2 - w / 2, (mScreenwidth) / 2 - h / 2);
         invalidate();
     }
@@ -247,83 +247,91 @@ public class StickerView extends AppCompatImageView {
                     if (operationListener != null) {
                         operationListener.onDeleteClick();
                     }
-                } else if (isInResize(event)) {
+                }
+                else if (isInResize(event)) {
                     isInResize = true;
                     lastRotateDegree = rotationToStartPoint(event);
                     midPointToStartPoint(event);
                     lastLength = diagonalLength(event);
-                } else if (isInButton(event, dst_flipV)) {
-                    PointF localPointF = new PointF();
-                    midDiagonalPoint(localPointF);
-                    matrix.postScale(-1.0F, 1.0F, localPointF.x, localPointF.y);
-                    isHorizonMirror = !isHorizonMirror;
-                    invalidate();
-                } else if (isInButton(event, dst_top)) {
-                    bringToFront();
-                    if (operationListener != null) {
-                        operationListener.onTop(this);
-                    }
-                } else if (isInBitmap(event)) {
+                }
+//                else if (isInButton(event, dst_flipV)) {
+//                    PointF localPointF = new PointF();
+//                    midDiagonalPoint(localPointF);
+//                    matrix.postScale(-1.0F, 1.0F, localPointF.x, localPointF.y);
+//                    isHorizonMirror = !isHorizonMirror;
+//                    invalidate();
+//                }
+//                else if (isInButton(event, dst_top)) {
+//                    bringToFront();
+//                    if (operationListener != null) {
+//                        operationListener.onTop(this);
+//                    }
+//                }
+                else if (isInBitmap(event)) {
                     isInSide = true;
                     lastX = event.getX(0);
                     lastY = event.getY(0);
-                } else {
+                }
+                else {
                     handled = false;
                 }
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
-                if (spacing(event) > pointerLimitDis) {
-                    oldDis = spacing(event);
-                    isPointerDown = true;
-                    midPointToStartPoint(event);
-                } else {
-                    isPointerDown = false;
-                }
-                isInSide = false;
-                isInResize = false;
+//                if (spacing(event) > pointerLimitDis) {
+//                    oldDis = spacing(event);
+//                    isPointerDown = true;
+//                    midPointToStartPoint(event);
+//                }
+//                else {
+//                    isPointerDown = false;
+//                }
+//                isInSide = false;
+//                isInResize = false;
                 break;
             case MotionEvent.ACTION_MOVE:
 
                 //双指缩放
-                if (isPointerDown) {
-                    float scale;
-                    float disNew = spacing(event);
-                    if (disNew == 0 || disNew < pointerLimitDis) {
-                        scale = 1;
-                    } else {
-                        scale = disNew / oldDis;
-                        //缩放缓慢
-                        scale = (scale - 1) * pointerZoomCoeff + 1;
-                    }
-                    float scaleTemp = (scale * Math.abs(dst_flipV.left - dst_resize.left)) / oringinWidth;
-                    if (((scaleTemp <= MIN_SCALE)) && scale < 1 ||
-                            (scaleTemp >= MAX_SCALE) && scale > 1) {
-                        scale = 1;
-                    } else {
-                        lastLength = diagonalLength(event);
-                    }
-                    matrix.postScale(scale, scale, mid.x, mid.y);
-                    invalidate();
-                } else if (isInResize) {
-
-                    matrix.postRotate((rotationToStartPoint(event) - lastRotateDegree) * 2, mid.x, mid.y);
-                    lastRotateDegree = rotationToStartPoint(event);
-
-                    float scale = diagonalLength(event) / lastLength;
-
-                    if (((diagonalLength(event) / halfDiagonalLength <= MIN_SCALE)) && scale < 1 ||
-                            (diagonalLength(event) / halfDiagonalLength >= MAX_SCALE) && scale > 1) {
-                        scale = 1;
-                        if (!isInResize(event)) {
-                            isInResize = false;
-                        }
-                    } else {
-                        lastLength = diagonalLength(event);
-                    }
-                    matrix.postScale(scale, scale, mid.x, mid.y);
-
-                    invalidate();
-                } else if (isInSide) {
+//                if (isPointerDown) {
+//                    float scale;
+//                    float disNew = spacing(event);
+//                    if (disNew == 0 || disNew < pointerLimitDis) {
+//                        scale = 1;
+//                    } else {
+//                        scale = disNew / oldDis;
+//                        //缩放缓慢
+//                        scale = (scale - 1) * pointerZoomCoeff + 1;
+//                    }
+//                    float scaleTemp = (scale * Math.abs(dst_flipV.left - dst_resize.left)) / oringinWidth;
+//                    if (((scaleTemp <= MIN_SCALE)) && scale < 1 ||
+//                            (scaleTemp >= MAX_SCALE) && scale > 1) {
+//                        scale = 1;
+//                    } else {
+//                        lastLength = diagonalLength(event);
+//                    }
+//                    matrix.postScale(scale, scale, mid.x, mid.y);
+//                    invalidate();
+//                }
+//                if (isInResize) {
+//
+//                    matrix.postRotate((rotationToStartPoint(event) - lastRotateDegree) * 2, mid.x, mid.y);
+//                    lastRotateDegree = rotationToStartPoint(event);
+//
+//                    float scale = diagonalLength(event) / lastLength;
+//
+//                    if (((diagonalLength(event) / halfDiagonalLength <= MIN_SCALE)) && scale < 1 ||
+//                            (diagonalLength(event) / halfDiagonalLength >= MAX_SCALE) && scale > 1) {
+//                        scale = 1;
+//                        if (!isInResize(event)) {
+//                            isInResize = false;
+//                        }
+//                    } else {
+//                        lastLength = diagonalLength(event);
+//                    }
+//                    matrix.postScale(scale, scale, mid.x, mid.y);
+//
+//                    invalidate();
+//                }
+                if (isInSide) {
                     float x = event.getX(0);
                     float y = event.getY(0);
                     matrix.postTranslate(x - lastX, y - lastY);
@@ -334,7 +342,7 @@ public class StickerView extends AppCompatImageView {
                 break;
             case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
-                isInResize = false;
+//                isInResize = false;
                 isInSide = false;
                 isPointerDown = false;
                 break;

@@ -77,6 +77,7 @@ class EditOperationsPlayerActivity : BaseActivity() {
     private var outputFilePath: String? = null
     private var gifData: ByteArray? = null
     private var input_video_uri_ffmpeg: String? = null
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -193,6 +194,7 @@ class EditOperationsPlayerActivity : BaseActivity() {
         view.getLocationOnScreen(location)
         return Point(location[0], location[1])
     }
+
     private fun ffmpegGifTransformation() {
         val gifPath = saveGif(gifData!!)
         Log.d("eopa", "gifFilePath:$gifPath")
@@ -242,28 +244,54 @@ class EditOperationsPlayerActivity : BaseActivity() {
                 imageUri = result.data!!.data
                 Log.d("imageUri", "imageUri: $imageUri")
                 val bitmap: Bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
-
                 Log.d("eopa", "bitmap: $bitmap")
+                val nh = (bitmap.height * (512.0 / bitmap.width)).toInt()
+                Log.d("eopa", "nh: $nh")
 
-                var ww = bitmap.width
-                if (ww < 550) {
-                    ww = 550
-                }
-                var s = ww - bitmap.width
-                if (s > 2) {
-                    s /= 2
-                }
-                val dstBmp = Bitmap.createBitmap(ww, bitmap.height + 30, Bitmap.Config.ARGB_8888)
-                val bmOverlay = Bitmap.createBitmap(
-                    dstBmp.width, dstBmp.height, dstBmp.config
-                )
-                val canvas = Canvas(bmOverlay)
-                Log.d("eoa", "hwa:${canvas.isHardwareAccelerated}")
-                canvas.drawBitmap(dstBmp, Matrix(), null)
-                canvas.drawBitmap(bitmap, s.toFloat(), 15f, null)
-                addStickerView(bmOverlay)
+                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 512, nh, true)
+                Log.d("eopa", "scaledBitmap: $scaledBitmap")
+                val newMutableBitmap = convertToMutable(scaledBitmap)
+                Log.d("eopa", "newMutableBitmap:$newMutableBitmap ")
+//                var ww = bitmap.width
+//                if (ww < 550) {
+//                    ww = 550
+//                }
+//                var s = ww - bitmap.width
+//                if (s > 2) {
+//                    s /= 2
+//                }
+//                val dstBmp = Bitmap.createBitmap(ww, bitmap.height + 30, Bitmap.Config.ARGB_8888)
+//                val bmOverlay = Bitmap.createBitmap(
+//                    dstBmp.width, dstBmp.height, dstBmp.config
+//                )
+//
+//                val canvas = Canvas(bmOverlay)
+//                Log.d("eoa", "hwa:${canvas.isHardwareAccelerated}")
+//                canvas.drawBitmap(dstBmp, Matrix(), null)
+//                canvas.drawBitmap(bitmap, s.toFloat(), 15f, null)
+                addStickerView(newMutableBitmap)
             }
         }
+
+    private fun convertToMutable(bitmap: Bitmap): Bitmap {
+        // Get the width and height of the original bitmap
+        val width = bitmap.width
+        val height = bitmap.height
+        Log.d("eopa", "convertToMutable: width : $width height : $height")
+        // Create a mutable Bitmap with the same width and height
+        val mutableBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+
+        Log.d("eopa", "mutableBitmap: $mutableBitmap")
+
+        // Create a Canvas object and associate it with the mutable Bitmap
+        val canvas = Canvas(mutableBitmap)
+
+        // Draw the original Bitmap onto the mutable Bitmap using the Canvas
+        canvas.drawBitmap(bitmap, 0f, 0f, null)
+
+        // Return the mutable Bitmap
+        return mutableBitmap
+    }
 
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<out String>, grantResults: IntArray

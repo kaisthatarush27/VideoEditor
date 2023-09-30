@@ -104,8 +104,8 @@ public class StickerView extends AppCompatImageView {
         localPaint.setStyle(Paint.Style.STROKE);
         localPaint.setStrokeWidth(2.0f);
         dm = getResources().getDisplayMetrics();
-//        mScreenwidth = dm.widthPixels;
-//        mScreenHeight = dm.heightPixels;
+        mScreenwidth = dm.widthPixels;
+        mScreenHeight = dm.heightPixels;
 
     }
 
@@ -133,20 +133,20 @@ public class StickerView extends AppCompatImageView {
             dst_delete.top = (int) (f4 - deleteBitmapHeight / 2);
             dst_delete.bottom = (int) (f4 + deleteBitmapHeight / 2);
             //拉伸等操作在右下角
-            dst_resize.left = (int) (f7 - resizeBitmapWidth / 2);
-            dst_resize.right = (int) (f7 + resizeBitmapWidth / 2);
-            dst_resize.top = (int) (f8 - resizeBitmapHeight / 2);
-            dst_resize.bottom = (int) (f8 + resizeBitmapHeight / 2);
-            //垂直镜像在左上角
-            dst_top.left = (int) (f1 - flipVBitmapWidth / 2);
-            dst_top.right = (int) (f1 + flipVBitmapWidth / 2);
-            dst_top.top = (int) (f2 - flipVBitmapHeight / 2);
-            dst_top.bottom = (int) (f2 + flipVBitmapHeight / 2);
-            //水平镜像在左下角
-            dst_flipV.left = (int) (f5 - topBitmapWidth / 2);
-            dst_flipV.right = (int) (f5 + topBitmapWidth / 2);
-            dst_flipV.top = (int) (f6 - topBitmapHeight / 2);
-            dst_flipV.bottom = (int) (f6 + topBitmapHeight / 2);
+//            dst_resize.left = (int) (f7 - resizeBitmapWidth / 2);
+//            dst_resize.right = (int) (f7 + resizeBitmapWidth / 2);
+//            dst_resize.top = (int) (f8 - resizeBitmapHeight / 2);
+//            dst_resize.bottom = (int) (f8 + resizeBitmapHeight / 2);
+//            //垂直镜像在左上角
+//            dst_top.left = (int) (f1 - flipVBitmapWidth / 2);
+//            dst_top.right = (int) (f1 + flipVBitmapWidth / 2);
+//            dst_top.top = (int) (f2 - flipVBitmapHeight / 2);
+//            dst_top.bottom = (int) (f2 + flipVBitmapHeight / 2);
+//            //水平镜像在左下角
+//            dst_flipV.left = (int) (f5 - topBitmapWidth / 2);
+//            dst_flipV.right = (int) (f5 + topBitmapWidth / 2);
+//            dst_flipV.top = (int) (f6 - topBitmapHeight / 2);
+//            dst_flipV.bottom = (int) (f6 + topBitmapHeight / 2);
             if (isInEdit) {
 
                 canvas.drawLine(f1, f2, f3, f4, localPaint);
@@ -155,12 +155,12 @@ public class StickerView extends AppCompatImageView {
                 canvas.drawLine(f5, f6, f1, f2, localPaint);
 
                 canvas.drawBitmap(deleteBitmap, null, dst_delete, null);
-                canvas.drawBitmap(resizeBitmap, null, dst_resize, null);
-                canvas.drawBitmap(flipVBitmap, null, dst_flipV, null);
-                canvas.drawBitmap(topBitmap, null, dst_top, null);
+//                canvas.drawBitmap(resizeBitmap, null, dst_resize, null);
+//                canvas.drawBitmap(flipVBitmap, null, dst_flipV, null);
+//                canvas.drawBitmap(topBitmap, null, dst_top, null);
             }
 
-            canvas.restore();
+//            canvas.restore();
         }
     }
 
@@ -176,19 +176,19 @@ public class StickerView extends AppCompatImageView {
         initBitmaps();
         int w = mBitmap.getWidth();
         int h = mBitmap.getHeight();
-        oringinWidth = w;
+//        oringinWidth = w;
 //        float initScale = (MIN_SCALE + MAX_SCALE) / 2;
 //        matrix.postScale(initScale, initScale, w / 2, h / 2);
         matrix.postTranslate(mScreenwidth / 2 - w / 2, (mScreenwidth) / 2 - h / 2);
+
+        deleteBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.icon_delete);
+        deleteBitmapWidth = (int) (deleteBitmap.getWidth() * BITMAP_SCALE);
+        deleteBitmapHeight = (int) (deleteBitmap.getHeight() * BITMAP_SCALE);
         invalidate();
     }
 
     public Bitmap getBitmap() {
         return mBitmap;
-    }
-
-    private void setDiagonalLength() {
-        halfDiagonalLength = Math.hypot(mBitmap.getWidth(), mBitmap.getHeight()) / 2;
     }
 
     private void initBitmaps() {
@@ -219,21 +219,21 @@ public class StickerView extends AppCompatImageView {
                 MAX_SCALE = 1.0f * mScreenwidth / mBitmap.getHeight();
             }
         }
-        topBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.icon_top_enable);
-        deleteBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.icon_delete);
-        flipVBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.icon_flip);
-        resizeBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.icon_resize);
-        deleteBitmapWidth = (int) (deleteBitmap.getWidth() * BITMAP_SCALE);
-        deleteBitmapHeight = (int) (deleteBitmap.getHeight() * BITMAP_SCALE);
-
-        resizeBitmapWidth = (int) (resizeBitmap.getWidth() * BITMAP_SCALE);
-        resizeBitmapHeight = (int) (resizeBitmap.getHeight() * BITMAP_SCALE);
-
-        flipVBitmapWidth = (int) (flipVBitmap.getWidth() * BITMAP_SCALE);
-        flipVBitmapHeight = (int) (flipVBitmap.getHeight() * BITMAP_SCALE);
-
-        topBitmapWidth = (int) (topBitmap.getWidth() * BITMAP_SCALE);
-        topBitmapHeight = (int) (topBitmap.getHeight() * BITMAP_SCALE);
+//        topBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.icon_top_enable);
+//        deleteBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.icon_delete);
+//        flipVBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.icon_flip);
+//        resizeBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.icon_resize);
+//        deleteBitmapWidth = (int) (deleteBitmap.getWidth() * BITMAP_SCALE);
+//        deleteBitmapHeight = (int) (deleteBitmap.getHeight() * BITMAP_SCALE);
+//
+//        resizeBitmapWidth = (int) (resizeBitmap.getWidth() * BITMAP_SCALE);
+//        resizeBitmapHeight = (int) (resizeBitmap.getHeight() * BITMAP_SCALE);
+//
+//        flipVBitmapWidth = (int) (flipVBitmap.getWidth() * BITMAP_SCALE);
+//        flipVBitmapHeight = (int) (flipVBitmap.getHeight() * BITMAP_SCALE);
+//
+//        topBitmapWidth = (int) (topBitmap.getWidth() * BITMAP_SCALE);
+//        topBitmapHeight = (int) (topBitmap.getHeight() * BITMAP_SCALE);
     }
 
     @Override
@@ -248,12 +248,12 @@ public class StickerView extends AppCompatImageView {
                         operationListener.onDeleteClick();
                     }
                 }
-                else if (isInResize(event)) {
-                    isInResize = true;
-                    lastRotateDegree = rotationToStartPoint(event);
-                    midPointToStartPoint(event);
-                    lastLength = diagonalLength(event);
-                }
+//                else if (isInResize(event)) {
+//                    isInResize = true;
+//                    lastRotateDegree = rotationToStartPoint(event);
+//                    midPointToStartPoint(event);
+//                    lastLength = diagonalLength(event);
+//                }
 //                else if (isInButton(event, dst_flipV)) {
 //                    PointF localPointF = new PointF();
 //                    midDiagonalPoint(localPointF);
@@ -416,61 +416,6 @@ public class StickerView extends AppCompatImageView {
         int top = rect.top;
         int bottom = rect.bottom;
         return event.getX(0) >= left && event.getX(0) <= right && event.getY(0) >= top && event.getY(0) <= bottom;
-    }
-
-    private boolean isInResize(MotionEvent event) {
-        int left = -20 + this.dst_resize.left;
-        int top = -20 + this.dst_resize.top;
-        int right = 20 + this.dst_resize.right;
-        int bottom = 20 + this.dst_resize.bottom;
-        return event.getX(0) >= left && event.getX(0) <= right && event.getY(0) >= top && event.getY(0) <= bottom;
-    }
-
-    private void midPointToStartPoint(MotionEvent event) {
-        float[] arrayOfFloat = new float[9];
-        matrix.getValues(arrayOfFloat);
-        float f1 = 0.0f * arrayOfFloat[0] + 0.0f * arrayOfFloat[1] + arrayOfFloat[2];
-        float f2 = 0.0f * arrayOfFloat[3] + 0.0f * arrayOfFloat[4] + arrayOfFloat[5];
-        float f3 = f1 + event.getX(0);
-        float f4 = f2 + event.getY(0);
-        mid.set(f3 / 2, f4 / 2);
-    }
-
-    private void midDiagonalPoint(PointF paramPointF) {
-        float[] arrayOfFloat = new float[9];
-        this.matrix.getValues(arrayOfFloat);
-        float f1 = 0.0F * arrayOfFloat[0] + 0.0F * arrayOfFloat[1] + arrayOfFloat[2];
-        float f2 = 0.0F * arrayOfFloat[3] + 0.0F * arrayOfFloat[4] + arrayOfFloat[5];
-        float f3 = arrayOfFloat[0] * this.mBitmap.getWidth() + arrayOfFloat[1] * this.mBitmap.getHeight() + arrayOfFloat[2];
-        float f4 = arrayOfFloat[3] * this.mBitmap.getWidth() + arrayOfFloat[4] * this.mBitmap.getHeight() + arrayOfFloat[5];
-        float f5 = f1 + f3;
-        float f6 = f2 + f4;
-        paramPointF.set(f5 / 2.0F, f6 / 2.0F);
-    }
-
-    private float rotationToStartPoint(MotionEvent event) {
-
-        float[] arrayOfFloat = new float[9];
-        matrix.getValues(arrayOfFloat);
-        float x = 0.0f * arrayOfFloat[0] + 0.0f * arrayOfFloat[1] + arrayOfFloat[2];
-        float y = 0.0f * arrayOfFloat[3] + 0.0f * arrayOfFloat[4] + arrayOfFloat[5];
-        double arc = Math.atan2(event.getY(0) - y, event.getX(0) - x);
-        return (float) Math.toDegrees(arc);
-    }
-
-    private float diagonalLength(MotionEvent event) {
-        float diagonalLength = (float) Math.hypot(event.getX(0) - mid.x, event.getY(0) - mid.y);
-        return diagonalLength;
-    }
-
-    private float spacing(MotionEvent event) {
-        if (event.getPointerCount() == 2) {
-            float x = event.getX(0) - event.getX(1);
-            float y = event.getY(0) - event.getY(1);
-            return (float) Math.sqrt(x * x + y * y);
-        } else {
-            return 0;
-        }
     }
 
     public interface OperationListener {

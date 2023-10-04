@@ -35,6 +35,7 @@ public class StickerView extends View {
     public float lastX, lastY;
 
     private boolean isInEdit = true;
+    private double halfDiagonalLength;
 
     public StickerView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -49,6 +50,10 @@ public class StickerView extends View {
     public StickerView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init();
+    }
+
+    private void setDiagonalLength() {
+        halfDiagonalLength = Math.hypot(mBitmap.getWidth(), mBitmap.getHeight()) / 2;
     }
 
     private void init() {
@@ -149,10 +154,11 @@ public class StickerView extends View {
     public void setBitmap(Bitmap bitmap) {
         matrix.reset();
         mBitmap = bitmap;
+        setDiagonalLength();
         deleteBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.icon_delete);
         int w = mBitmap.getWidth();
         int h = mBitmap.getHeight();
-        matrix.postTranslate(mScreenwidth / 2, (mScreenwidth) / 2 - h / 2);
+        matrix.postTranslate(mScreenwidth / 2 - w / 2, (mScreenwidth) / 2 - h / 2);
         deleteBitmapWidth = (int) (deleteBitmap.getWidth() * BITMAP_SCALE);
         deleteBitmapHeight = (int) (deleteBitmap.getHeight() * BITMAP_SCALE);
         invalidate();

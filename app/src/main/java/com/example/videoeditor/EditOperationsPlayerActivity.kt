@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Matrix
 import android.graphics.Point
 import android.net.Uri
 import android.os.Build
@@ -28,12 +27,15 @@ import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.Effect
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.Player
+import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.BitmapOverlay
 import androidx.media3.effect.OverlayEffect
 import androidx.media3.effect.OverlaySettings
 import androidx.media3.effect.TextureOverlay
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.util.EventLogger
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
 import androidx.media3.transformer.Effects
@@ -67,6 +69,7 @@ class EditOperationsPlayerActivity : BaseActivity() {
     private lateinit var exoPlayer: ExoPlayer
     private var mViews: ArrayList<View>? = null
     private var mCurrentView: StickerView? = null
+    private var scaledBitmap: Bitmap? = null
     private var mediaItem: MediaItem? = null
     private var imageUri: Uri? = null
     private var imagePath: String? = null
@@ -77,6 +80,13 @@ class EditOperationsPlayerActivity : BaseActivity() {
     private var outputFilePath: String? = null
     private var gifData: ByteArray? = null
     private var input_video_uri_ffmpeg: String? = null
+    private var videoWidth = 0
+    private var videoHeight = 0
+    private var exoPlayerPrepared = false
+    private var scaledEmojiBitmap: Bitmap? = null
+    private var scaledImageBitmap: Bitmap? = null
+    private var scaledWidth: Int = 0
+    private var scaledHeight: Int = 0
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,6 +95,8 @@ class EditOperationsPlayerActivity : BaseActivity() {
         setContentView(binding.root)
         exoPlayer = ExoPlayer.Builder(this).build()
         binding.playerView.player = exoPlayer
+        exoPlayer.addListener(playbackStateListener())
+        exoPlayer.addAnalyticsListener(EventLogger())
 
         fetchVideoString = intent.getStringExtra("inputVideoUri")
         if (fetchVideoString != null) {
@@ -92,9 +104,9 @@ class EditOperationsPlayerActivity : BaseActivity() {
 
             mediaItem = MediaItem.fromUri(fetchVideoString!!.toUri())
             exoPlayer.setMediaItem(mediaItem!!)
+            exoPlayer.addListener(playbackStateListener())
             exoPlayer.prepare()
         }
-
         binding.insertTextLl.setOnClickListener {
             this.IMAGE_OR_GIF = 2
             startActivityForResult(Intent(this, EditTextPopupActivity::class.java), 1)
@@ -245,13 +257,15 @@ class EditOperationsPlayerActivity : BaseActivity() {
                 Log.d("imageUri", "imageUri: $imageUri")
                 val bitmap: Bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
                 Log.d("eopa", "bitmap: $bitmap")
-                val nh = (bitmap.height * (512.0 / bitmap.width)).toInt()
-                Log.d("eopa", "nh: $nh")
-
-                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 512, nh, true)
-                Log.d("eopa", "scaledBitmap: $scaledBitmap")
-                val newMutableBitmap = convertToMutable(scaledBitmap)
-                Log.d("eopa", "newMutableBitmap:$newMutableBitmap ")
+//                val nh = (bitmap.height * (512.0 / bitmap.width)).toInt()
+//                Log.d("eopa", "nh: $nh")
+//                  video 480x 864
+//                bitma 3072x4096
+//                480x648
+//                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 512, nh, true)
+//                Log.d("eopa", "scaledBitmap: $scaledBitmap")
+//                val newMutableBitmap = convertToMutable(scaledBitmap)
+//                Log.d("eopa", "newMutableBitmap:$newMutableBitmap ")
 //                var ww = bitmap.width
 //                if (ww < 550) {
 //                    ww = 550
@@ -269,9 +283,77 @@ class EditOperationsPlayerActivity : BaseActivity() {
 //                Log.d("eoa", "hwa:${canvas.isHardwareAccelerated}")
 //                canvas.drawBitmap(dstBmp, Matrix(), null)
 //                canvas.drawBitmap(bitmap, s.toFloat(), 15f, null)
-                addStickerView(newMutableBitmap)
+//                addStickerView(newMutableBitmap)
+//                val bitmapAspectRatio = bitmap.width / bitmap.height
+//                1080x2160
+//                1060x500
+//                1080x509
+                val ar = calculateAspectRatio(bitmap)
+                Log.d("eopa", "aspectRatio:$ar")
+
+//                val scaledWidth: Int
+//                val scaledHeight: Int
+
+                if (exoPlayerPrepared) {
+                    if (ar > 1) {
+                        // Landscape-oriented bitmap
+                        scaledWidth = videoWidth
+                        scaledHeight = (videoWidth / ar).toInt()
+                        scaledImageBitmap =
+                            Bitmap.createScaledBitmap(
+                                bitmap,
+                                scaledWidth,
+                                scaledHeight,
+                                false
+                            )
+
+                        Log.d("eopa", "scaledImageBitmapL:$scaledImageBitmap")
+                        addStickerView(scaledImageBitmap!!)
+
+                    } else {
+                        // Portrait-oriented bitmap or square 1080x283 2160 3840
+                        scaledHeight = videoHeight
+                        scaledWidth = (videoHeight * ar).toInt()
+                        scaledImageBitmap =
+                            Bitmap.createScaledBitmap(
+                                bitmap,
+                                scaledWidth,
+                                scaledHeight,
+                                false
+                            )
+
+                        Log.d("eopa", "scaledImageBitmapP:$scaledImageBitmap")
+                        addStickerView(scaledImageBitmap!!)
+                    }
+                }
+
+//                if (exoPlayerPrepared) {
+//                    Log.d("eopa", "onActivityResult: newVideoWidth: $videoWidth")
+//
+//                    scaledImageBitmap =
+//                        Bitmap.createScaledBitmap(
+//                            bitmap,
+//                            videoWidth,
+//                            videoWidth / bitmapAspectRatio,
+//                            false
+//                        )
+//                    Log.d("eopa", "scaledImageBitmap:$scaledImageBitmap")
+//                    addStickerView(scaledImageBitmap!!)
+//                }
             }
         }
+
+    private fun calculateAspectRatio(bitmap: Bitmap): Float {
+        val width = bitmap.width
+        val height = bitmap.height
+
+        // Calculate the aspect ratio (width / height)
+        return if (height != 0) {
+            width.toFloat() / height.toFloat()
+        } else {
+            0f // Handle the case where height is 0 (to avoid division by zero)
+        }
+    }
 
     private fun convertToMutable(bitmap: Bitmap): Bitmap {
         // Get the width and height of the original bitmap
@@ -361,48 +443,108 @@ class EditOperationsPlayerActivity : BaseActivity() {
                     EditTextPopupActivity.textBitmap!!
                 )
                 Log.d("eopa", "onActivityResult:$textBitmap")
+//                val trimmedBitmap = createTrimmedBitmap(textBitmap)!!
+//                val aspectRatio = trimmedBitmap.width / trimmedBitmap.height
+//                val ar = textBitmap.width / textBitmap.height
+                val ar = calculateAspectRatio(textBitmap)
+//                initExoPlayer()
+//                val scaledWidth: Int
+//                val scaledHeight: Int
+                if (exoPlayerPrepared) {
+//                    Log.d("eopa", "onActivityResult: newVideoWidth: $videoWidth")
+//                    if(ar > 1)
+//                        scaledWidth = videoWidth
+//                        scaledHeight = (videoWidth / ar).toInt()
+//                        scaledBitmap =
+//                            Bitmap.createScaledBitmap(
+//                                textBitmap,
+//                                scaledWidth,
+//                                scaledHeight,
+//                                false
+//                            )
+//                        Log.d("eopa", "scaledBitmap:$scaledBitmap")
+//                        addStickerView(scaledBitmap!!)
+//                    }
+//                    else{
+//                        scaledHeight = videoHeight
+//                        scaledWidth = (videoHeight * ar).toInt()
+//                        scaledBitmap =
+//                            Bitmap.createScaledBitmap(
+//                                textBitmap,
+//                                scaledWidth,
+//                                scaledHeight,
+//                                false
+//                            )
+//                        Log.d("eopa", "scaledBitmap:$scaledBitmap")
+//                        addStickerView(scaledBitmap!!)
+//                    }
 
-                val conf = Bitmap.Config.ARGB_4444
+                    /*scaledWidth = videoWidth*/
+                    /*scaledHeight = (videoWidth / ar).toInt()*/
+                    scaledBitmap =
+                        Bitmap.createScaledBitmap(
+                            textBitmap,
+                            videoWidth,
+                            (videoWidth / ar).toInt(),
+                            false
+                        )
+                    Log.d("eopa", "scaledBitmap:$scaledBitmap")
+                    addStickerView(scaledBitmap!!)
 
-                var ww = textBitmap.width
-                if (ww < 550) {
-                    ww = 550
+//                    scaledBitmap =
+//                        Bitmap.createScaledBitmap(
+//                            textBitmap,
+//                            videoWidth,
+//                            (videoWidth / ar).toInt(),
+//                            false
+//                        )
+//                    Log.d("eopa", "scaledBitmap:$scaledBitmap")
+//                    addStickerView(scaledBitmap!!)
                 }
-                var s = ww - textBitmap.width
-                if (s > 2) {
-                    s /= 2
-                }
-                val dstBmp = Bitmap.createBitmap(ww, textBitmap.height + 30, conf)
-
-                val bmOverlay = Bitmap.createBitmap(dstBmp.width, dstBmp.height, dstBmp.config)
-                val canvas = Canvas(bmOverlay)
-                canvas.drawBitmap(dstBmp, Matrix(), null)
-                canvas.drawBitmap(textBitmap, s.toFloat(), 15f, null)
-
-                addStickerView(bmOverlay)
+//                scaledBitmap =
+//                    Bitmap.createScaledBitmap(
+//                        trimmedBitmap,
+//                        videoWidth,
+//                        videoWidth / aspectRatio,
+//                        false
+//                    )
+//                Log.d("eopa", "scaledBitmap:$scaledBitmap")
+//                addStickerView(scaledBitmap!!)
             }
         } else if (requestCode == 2) {
             if (resultCode == RESULT_OK) {
                 val emojiTextBitmap = Bitmap.createBitmap(EmojiActivity.emojiTextBitmap!!)
                 Log.d("eopa", "emojiTextBitmap:$emojiTextBitmap")
-                val conf = Bitmap.Config.ARGB_4444
-
-                var ww = emojiTextBitmap.width
-                if (ww < 550) {
-                    ww = 550
+//                val conf = Bitmap.Config.ARGB_4444
+//
+//                var ww = emojiTextBitmap.width
+//                if (ww < 550) {
+//                    ww = 550
+//                }
+//                var s = ww - emojiTextBitmap.width
+//                if (s > 2) {
+//                    s /= 2
+//                }
+//                val dstBmp = Bitmap.createBitmap(ww, emojiTextBitmap.height + 30, conf)
+//
+//                val bmOverlay = Bitmap.createBitmap(dstBmp.width, dstBmp.height, dstBmp.config)
+//                val canvas = Canvas(bmOverlay)
+//                canvas.drawBitmap(dstBmp, Matrix(), null)
+//                canvas.drawBitmap(emojiTextBitmap, s.toFloat(), 15f, null)
+                val ar = emojiTextBitmap.width / emojiTextBitmap.height
+//                val ar = calculateAspectRatio(emojiTextBitmap)
+                if (exoPlayerPrepared) {
+                    /*scaledWidth = videoWidth*/
+                    /*scaledHeight = videoWidth / ar*/
+                    scaledEmojiBitmap = Bitmap.createScaledBitmap(
+                        emojiTextBitmap,
+                        videoWidth,
+                        videoHeight,
+                        false
+                    )
+                    Log.d("eopa", "scaledEmojiBitmap:$scaledEmojiBitmap")
+                    addStickerView(scaledEmojiBitmap!!)
                 }
-                var s = ww - emojiTextBitmap.width
-                if (s > 2) {
-                    s /= 2
-                }
-                val dstBmp = Bitmap.createBitmap(ww, emojiTextBitmap.height + 30, conf)
-
-                val bmOverlay = Bitmap.createBitmap(dstBmp.width, dstBmp.height, dstBmp.config)
-                val canvas = Canvas(bmOverlay)
-                canvas.drawBitmap(dstBmp, Matrix(), null)
-                canvas.drawBitmap(emojiTextBitmap, s.toFloat(), 15f, null)
-
-                addStickerView(bmOverlay)
             }
         } else if (requestCode == 3) {
             if (resultCode == RESULT_OK) {
@@ -600,13 +742,13 @@ class EditOperationsPlayerActivity : BaseActivity() {
         if (mCurrentView != null) {
             mCurrentView!!.setInEdit(false)
         }
-        binding.captureLayout.isDrawingCacheEnabled = true
-        binding.captureLayout.buildDrawingCache()
-        val finalBitmap: Bitmap = Bitmap.createBitmap(
-            binding.captureLayout.drawingCache/*,
-            StickerView.lastX.toInt(),StickerView.lastY.toInt(),
-            binding.captureLayout.width,
-            binding.captureLayout.height*/
+        mCurrentView!!.isDrawingCacheEnabled = true
+        mCurrentView!!.buildDrawingCache()
+        val finalBitmap: Bitmap = Bitmap.createScaledBitmap(
+            mCurrentView!!.drawingCache,
+            /*scaledWidth*/ videoWidth,
+            /*scaledHeight*/ videoHeight,
+            false
         )
         val overLaysBuilder: ImmutableList.Builder<TextureOverlay> = ImmutableList.builder()
         val overlaySettings = OverlaySettings.Builder().build()
@@ -625,7 +767,15 @@ class EditOperationsPlayerActivity : BaseActivity() {
 
     private fun addStickerView(bitmap: Bitmap) {
         val stickerView = StickerView(this)
+        val lp = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT
+        )
+        lp.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE)
+        binding.captureLayout.addView(stickerView, lp)
+        mViews!!.add(stickerView)
         stickerView.bitmap = bitmap
+
+        setCurrentEdit(stickerView)
         stickerView.setOperationListener(object : OperationListener {
             override fun onDeleteClick() {
                 mViews!!.remove(stickerView)
@@ -650,13 +800,6 @@ class EditOperationsPlayerActivity : BaseActivity() {
             }
 
         })
-
-        val lp = RelativeLayout.LayoutParams(
-            RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT
-        )
-        binding.captureLayout.addView(stickerView, lp)
-        mViews!!.add(stickerView)
-        setCurrentEdit(stickerView)
     }
 
     private fun setCurrentEdit(stickerView: StickerView) {
@@ -707,6 +850,7 @@ class EditOperationsPlayerActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
+//        exoPlayerPrepared = false
         exoPlayer.stop()
         exoPlayer.release()
         initExoPlayer()
@@ -716,12 +860,14 @@ class EditOperationsPlayerActivity : BaseActivity() {
         super.onPause()
         exoPlayer.stop()
         exoPlayer.release()
+        exoPlayer.removeListener(playbackStateListener())
     }
 
     override fun onStop() {
         super.onStop()
         exoPlayer.stop()
         exoPlayer.release()
+        exoPlayer.removeListener(playbackStateListener())
     }
 
 
@@ -730,6 +876,45 @@ class EditOperationsPlayerActivity : BaseActivity() {
         binding.playerView.player = exoPlayer
         mediaItem = MediaItem.fromUri(fetchVideoString!!.toUri())
         exoPlayer.setMediaItem(mediaItem!!)
+        exoPlayer.addListener(playbackStateListener())
+        exoPlayer.addAnalyticsListener(EventLogger())
         exoPlayer.prepare()
+    }
+
+    private fun playbackStateListener() = object : Player.Listener {
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            // super.onPlaybackStateChanged(playbackState)
+
+            val stateString: String = when (playbackState) {
+                ExoPlayer.STATE_IDLE -> "ExoPlayer.STATE_IDLE"
+                ExoPlayer.STATE_BUFFERING -> "ExoPlayer.STATE_BUFFERING"
+                ExoPlayer.STATE_READY -> "ExoPlayer.STATE_READY"
+                ExoPlayer.STATE_ENDED -> "ExoPlayer.STATE_ENDED"
+                else -> "Unknown state"
+            }
+            Log.d("eopa", "onPlaybackStateChanged: changed state to $stateString")
+        }
+
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            // super.onIsPlayingChanged(isPlaying)
+            val playingString = if (isPlaying) "PLAYING" else "NOT PLAYING"
+            Log.d("eopa", "onIsPlayingChanged: Player is currently $playingString")
+        }
+
+        override fun onTracksChanged(tracks: Tracks) {
+//            super.onTracksChanged(tracks)
+            for (trackGroup in tracks.groups) {
+                for (i in 0 until trackGroup.length) {
+                    val trackFormat = trackGroup.getTrackFormat(i)
+                    if (trackFormat.sampleMimeType!!.startsWith("video/")) {
+                        Log.d("eopa", "trackFormat:$trackFormat")
+                        videoWidth = trackFormat.width
+                        videoHeight = trackFormat.height
+                        Log.d("eopa", "videoWidth:$videoWidth videoHeight: $videoHeight")
+                        exoPlayerPrepared = true
+                    }
+                }
+            }
+        }
     }
 }

@@ -539,7 +539,7 @@ class EditOperationsPlayerActivity : BaseActivity() {
                     scaledEmojiBitmap = Bitmap.createScaledBitmap(
                         emojiTextBitmap,
                         videoWidth,
-                        videoHeight / ar,
+                        videoWidth / ar,
                         false
                     )
                     Log.d("eopa", "scaledEmojiBitmap:$scaledEmojiBitmap")
